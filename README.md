@@ -1,3 +1,29 @@
+## Initialisation et installation du projet
+- Création du dossier PROJET ```bash D:\ mkdir PROJETS && cd PROJETS```
+- Création du projet laravel CRM GESTION CREDIT via composer
+```bash 
+    composer create-project laravel/laravel crm_gestion_credit
+```
+- Creation de la base de données
+  ### en ligne de commande lancer mysql
+  ```bash 
+    mysql -u root
+  ```
+  ### ensuite taper la commande
+  ```bash
+      CREATE DATABASE nom_de_la_base
+      CHARACTER SET utf8mb4
+      COLLATE utf8mb4_unicode_ci;
+   ```
+- choix du moteur de base données: InnoDB
+- lancement de l'application
+ ```bash
+  php artisan serve
+ ```
+
+## Choix technologiques
+
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
