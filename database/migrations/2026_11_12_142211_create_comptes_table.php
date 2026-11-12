@@ -19,9 +19,11 @@ return new class extends Migration
             $table->foreignId('agence_id')
                 ->constrained('agences')
                 ->restrictOnDelete();
+
             $table->foreignId('client_id')
                 ->constrained('clients')
                 ->restrictOnDelete();
+                
             $table->string('numero_compte', 30)->unique();
             $table->enum('type_compte', [
                 'courant',

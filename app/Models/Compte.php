@@ -9,4 +9,9 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 class Compte extends Model
 {
     use HasUuids;
+
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
 }
