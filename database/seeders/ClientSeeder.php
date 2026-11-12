@@ -7,6 +7,13 @@ use App\Models\Client;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
+use App\Models\AuditLog;
+use App\Models\Compte;
+use App\Models\Transaction;
+use App\Models\Credit;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 class ClientSeeder extends Seeder
 {
     /**
