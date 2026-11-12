@@ -2,34 +2,75 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-use App\Models\Agence;
-use App\Models\User;
-#[Fillable(['agence_id', 'code_client', 'nom_client', 'prenom_client', 'adresse_client', 'telephone_client', 'ville_client', 'email_client', 'date_naissance',
-    'lieu_naissance', 'sexe', 'type_piece_identite', 'numero_piece_identite', 'date_expiration_piece', 'profession', 'revenu_mensuel', 'statut', 'cree_par_user_id'])]
+#[Fillable([
+    'agence_id',
+    'code_client',
+    'nom_client',
+    'prenom_client',
+    'adresse_client',
+    'telephone_client',
+    'ville_client',
+    'email_client',
+    'date_naissance',
+    'lieu_naissance',
+    'sexe',
+    'type_piece_identite',
+    'numero_piece_identite',
+    'date_expiration_piece',
+    'profession',
+    'revenu_mensuel',
+    'statut',
+    'cree_par_user_id',
+])]
 
 class Client extends Model
 {
-    use HasUuids, softDeletes;
+    use HasUuids, SoftDeletes;
+
+    protected function casts(): array
+    {
+        return [
+            'date_naissance' => 'date',
+            'date_expiration_piece' => 'date',
+            'revenu_mensuel' => 'decimal:2',
+        ];
+    }
+
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
+    }
 
     public function getRouteKeyName(): string
     {
         return 'uuid';
     }
 
-    // Relation entre clients et agences
-    public function agence()
+    public function agence(): BelongsTo
     {
         return $this->belongsTo(Agence::class);
     }
 
-    // Relation entre clients et utilisateurs (users) qui ont créé le client
-    public function creer_par_user()
+    public function creerParUser(): BelongsTo
     {
-        return $this->belongsTo(User::class,'cree_par_user_id');
+        return $this->belongsTo(User::class, 'cree_par_user_id');
+    }
+
+    public function comptes(): HasMany
+    {
+        return $this->hasMany(Compte::class);
+    }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
     }
 }
 
