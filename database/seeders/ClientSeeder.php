@@ -7,13 +7,6 @@ use App\Models\Client;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
-use App\Models\AuditLog;
-use App\Models\Compte;
-use App\Models\Transaction;
-use App\Models\Credit;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 class ClientSeeder extends Seeder
 {
     /**
@@ -41,7 +34,7 @@ class ClientSeeder extends Seeder
         foreach (Agence::query()->orderBy('code_agence')->get() as $agence) {
             $createur = User::query()
                 ->where('agence_id', $agence->id)
-                ->where('role', 'conseiller_client')
+                ->where('role', 'conseiller')
                 ->orderBy('email')
                 ->firstOrFail();
 

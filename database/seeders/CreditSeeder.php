@@ -25,7 +25,7 @@ class CreditSeeder extends Seeder
         ) {
             $conseiller = User::query()
                 ->where('agence_id', $compte->agence_id)
-                ->where('role', 'conseiller_client')
+                ->where('role', 'conseiller')
                 ->orderBy('email')
                 ->firstOrFail();
             $validateur = User::query()

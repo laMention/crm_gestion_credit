@@ -2,20 +2,15 @@
 
 namespace App\Models;
 
+use App\Services\Authorization\AccesAgenceService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-use App\Models\Compte;
-use App\Models\User;
-use App\Models\Client;
-use App\Models\Transaction;
-use App\Models\Reporting;
-use App\Models\Credit;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\Agence;
 #[Fillable([
     'reference_transaction',
     'agence_id',
@@ -86,5 +81,14 @@ class Transaction extends Model
     public function compteDestinataire(): BelongsTo
     {
         return $this->belongsTo(Compte::class, 'compte_destinataire_id');
+    }
+
+    #[Scope]
+    protected function accessiblePar(Builder $query, User $utilisateur): void
+    {
+        app(AccesAgenceService::class)->filtrerParAgence(
+            $utilisateur,
+            $query
+        );
     }
 }

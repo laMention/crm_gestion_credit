@@ -29,7 +29,7 @@ class DatabaseSeederTest extends TestCase
             'administrateur',
             'direction',
             'chef_agence',
-            'conseiller_client',
+            'conseiller',
             'caissier',
         ] as $role) {
             $this->assertSame(

@@ -2,12 +2,12 @@
 
 namespace App\Enums;
 
-enum UserRole:string
+enum UserRole: string
 {
     case ADMINISTRATEUR = 'administrateur';
     case DIRECTION = 'direction';
     case CHEF_AGENCE = 'chef_agence';
-    case CONSEILLER_CLIENT = 'conseiller_client';
+    case CONSEILLER = 'conseiller';
     case CAISSIER = 'caissier';
 
     public function roleEchelleDuReseau(): bool
@@ -17,13 +17,14 @@ enum UserRole:string
             self::DIRECTION,
         ], true);
     }
+
     public function label(): string
     {
         return match ($this) {
             self::ADMINISTRATEUR => 'Administrateur',
             self::DIRECTION => 'Direction',
             self::CHEF_AGENCE => 'Chef d\'agence',
-            self::CONSEILLER_CLIENT => 'Conseiller client',
+            self::CONSEILLER => 'Conseiller',
             self::CAISSIER => 'Caissier',
         };
     }
@@ -32,9 +33,8 @@ enum UserRole:string
     {
         return in_array($this, [
             self::CHEF_AGENCE,
-            self::CONSEILLER_CLIENT,
+            self::CONSEILLER,
             self::CAISSIER,
         ], true);
     }
-
 }

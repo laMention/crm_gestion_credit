@@ -29,7 +29,7 @@ class AuthControllerTest extends TestCase
             'prenom' => 'Aminata',
             'email' => 'aminata@example.test',
             'password' => 'correct-password',
-            'role' => 'conseiller_client',
+            'role' => 'conseiller',
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [
@@ -43,7 +43,7 @@ class AuthControllerTest extends TestCase
             ->assertJsonPath('message', 'Connexion réussie.')
             ->assertJsonPath('data.token_type', 'Bearer')
             ->assertJsonPath('data.user.uuid', $user->uuid)
-            ->assertJsonPath('data.user.role', 'conseiller_client')
+            ->assertJsonPath('data.user.role', 'conseiller')
             ->assertJsonPath('data.user.agence.uuid', $agence->uuid)
             ->assertJsonMissingPath('data.user.password');
 
@@ -66,7 +66,7 @@ class AuthControllerTest extends TestCase
             'password' => 'wrong-password',
         ])
             ->assertUnauthorized()
-            ->assertJsonPath('message', 'Adresse e-mail ou mot de passe invalide.');
+            ->assertJsonPath('message', 'Informations de connexion invalides.');
 
         $this->assertDatabaseCount('personal_access_tokens', 0);
     }
@@ -116,10 +116,20 @@ class AuthControllerTest extends TestCase
 
     public function test_profile_returns_the_authenticated_user_and_role(): void
     {
+        $agence = Agence::query()->create([
+            'code_agence' => 'AG-TEST-2',
+            'nom_agence' => 'Agence de profil',
+            'adresse_agence' => 'Centre-ville',
+            'ville_agence' => 'Abidjan',
+            'telephone_agence' => '0700000001',
+            'email_agence' => 'profil-agence@example.test',
+            'actif' => true,
+        ]);
         $user = User::factory()->create([
             'nom' => 'Kouassi',
             'prenom' => 'Aminata',
             'role' => 'caissier',
+            'agence_id' => $agence->id,
         ]);
 
         $this->actingAs($user, 'sanctum')

@@ -18,7 +18,7 @@ class UserSeeder extends Seeder
             'administrateur' => 'Administrateur',
             'direction' => 'Direction',
             'chef_agence' => 'Chef agence',
-            'conseiller_client' => 'Conseiller client',
+            'conseiller' => 'Conseiller',
             'caissier' => 'Caissier',
         ];
         $password = Hash::make('Demo123!');

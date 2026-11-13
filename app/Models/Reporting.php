@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use App\Services\Authorization\AccesAgenceService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -64,5 +67,14 @@ class Reporting extends Model
     public function agence(): BelongsTo
     {
         return $this->belongsTo(Agence::class);
+    }
+
+    #[Scope]
+    protected function accessiblePar(Builder $query, User $utilisateur): void
+    {
+        app(AccesAgenceService::class)->filtrerParAgence(
+            $utilisateur,
+            $query
+        );
     }
 }
