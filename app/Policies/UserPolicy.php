@@ -36,8 +36,7 @@ class UserPolicy extends PolitiqueAgence
     {
         $acces = $this->verifierAccesAgence($user, $utilisateur->agence_id);
 
-        return $acces === true
-            && $user->role === UserRole::ADMINISTRATEUR;
+        return $acces === true && $user->role === UserRole::ADMINISTRATEUR;
     }
 
     public function activer(User $user, User $utilisateur): bool

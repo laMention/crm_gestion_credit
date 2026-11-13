@@ -39,6 +39,7 @@ class EcheanceCredit extends Model
             'montant_paye' => 'decimal:2',
             'date_paiement' => 'date',
             'statut_echeance_credit' => 'string',
+            'deleted_at' => 'datetime',
         ];
     }
 

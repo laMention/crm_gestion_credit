@@ -49,7 +49,6 @@ class CreerUtilisateurRequest extends FormRequest
                     UserRole::cases()
                 )),
             ],
-            'actif' => ['sometimes', 'boolean'],
         ];
     }
 

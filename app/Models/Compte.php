@@ -35,6 +35,7 @@ class Compte extends Model
             'solde' => 'decimal:2',
             'date_ouverture' => 'date',
             'date_cloture' => 'date',
+            'deleted_at' => 'datetime',
         ];
     }
 

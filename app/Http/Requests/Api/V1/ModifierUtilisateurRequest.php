@@ -17,8 +17,26 @@ class ModifierUtilisateurRequest extends FormRequest
     {
         $utilisateur = $this->recupererUtilisateurCible();
 
-        return $utilisateur instanceof User
-            && ($this->user()?->can('modifier', $utilisateur) ?? false);
+        if (! $utilisateur instanceof User
+            || ! ($this->user()?->can('modifier', $utilisateur) ?? false)
+        ) {
+            return false;
+        }
+
+        $demandeur = $this->user();
+
+        if ($demandeur instanceof User && $demandeur->is($utilisateur)) {
+            $roleChange = $this->exists('role')
+                && $this->input('role') !== $utilisateur->role->value;
+            $agenceChange = $this->exists('agence_id')
+                && (string) $this->input('agence_id') !== (string) $utilisateur->agence_id;
+
+            if ($roleChange || $agenceChange) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -68,7 +86,6 @@ class ModifierUtilisateurRequest extends FormRequest
                     UserRole::cases()
                 )),
             ],
-            'actif' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -97,7 +114,7 @@ class ModifierUtilisateurRequest extends FormRequest
 
     private function recupererUtilisateurCible(): ?User
     {
-        $utilisateur = $this->route('utilisateur');
+        $utilisateur = $this->route('uuid', $this->route('utilisateur'));
 
         if ($utilisateur instanceof User) {
             return $utilisateur;

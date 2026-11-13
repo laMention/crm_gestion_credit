@@ -40,6 +40,7 @@ class Transaction extends Model
             'date_transaction' => 'datetime',
             'date_validation' => 'datetime',
             'metadata' => 'array',
+            'deleted_at' => 'datetime',
         ];
     }
 

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\v1\AuthController;
+use App\Http\Controllers\Api\v1\RolePermissionController;
+use App\Http\Controllers\Api\v1\UtilisateurController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -11,6 +13,29 @@ Route::prefix('v1')->group(function () {
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
             Route::get('profile', [AuthController::class, 'profile']);
+            Route::get('permissions', [RolePermissionController::class, 'permissionsConnecte']);
         });
+    });
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('users', [UtilisateurController::class, 'lister']);
+        Route::post('users', [UtilisateurController::class, 'creer']);
+        Route::get('users/{uuid}/permissions', [
+            UtilisateurController::class,
+            'permissionsUtilisateur',
+        ]);
+        Route::get('users/{uuid}', [UtilisateurController::class, 'consulter']);
+        Route::put('users/{uuid}', [UtilisateurController::class, 'modifier']);
+        Route::patch('users/{uuid}', [UtilisateurController::class, 'modifier']);
+        Route::patch('users/{uuid}/activer', [UtilisateurController::class, 'activer']);
+        Route::patch('users/{uuid}/desactiver', [UtilisateurController::class, 'desactiver']);
+
+        Route::get('roles', [RolePermissionController::class, 'listerRoles']);
+        Route::get('roles/{role}', [RolePermissionController::class, 'consulterRole']);
+        Route::get('permissions', [RolePermissionController::class, 'listerPermissions']);
+        Route::get('permissions/{permission}', [
+            RolePermissionController::class,
+            'consulterPermission',
+        ]);
     });
 });

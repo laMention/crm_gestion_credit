@@ -6,9 +6,7 @@ use App\Models\User;
 use App\Services\Authorization\AccesAgenceService;
 use Illuminate\Auth\Access\Response;
 
-/**
- * Apply the agency boundary without granting a role any resource permission.
- */
+// Appliquer les limites de l'agence sans accorder à un rôle aucune autorisation d'accès aux ressources
 abstract class PolitiqueAgence
 {
     public function __construct(

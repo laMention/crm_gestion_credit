@@ -51,6 +51,7 @@ class Reporting extends Model
             'nombre_credits_en_cours' => 'integer',
             'encours_credits' => 'decimal:2',
             'genere_le' => 'datetime',
+
         ];
     }
 

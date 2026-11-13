@@ -29,6 +29,7 @@ class Agence extends Model
     {
         return [
             'actif' => 'boolean',
+            'deleted_at' => 'datetime',
         ];
     }
 

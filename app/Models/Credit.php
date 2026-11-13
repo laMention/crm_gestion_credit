@@ -52,6 +52,7 @@ class Credit extends Model
             'date_fin_prevue' => 'date',
             'duree_mois' => 'integer',
             'statut' => 'string',
+            'deleted_at' => 'datetime',
         ];
     }
 

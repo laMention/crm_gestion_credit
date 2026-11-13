@@ -43,6 +43,7 @@ class Client extends Model
             'date_naissance' => 'date',
             'date_expiration_piece' => 'date',
             'revenu_mensuel' => 'decimal:2',
+            'deleted_at' => 'datetime',
         ];
     }
 
