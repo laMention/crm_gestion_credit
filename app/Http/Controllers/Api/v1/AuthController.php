@@ -12,15 +12,19 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
-    public function login(
-        LoginRequest $request,
-        AuthService $authService
-    ): JsonResponse {
+    protected AuthService $authService;
+
+    public function __construct(AuthService $authService)
+    {
+        $this->authService = $authService;
+    }
+
+    public function login(LoginRequest $request): JsonResponse {
         $credentials = $request->validated();
 
         return response()->json([
             'message' => 'Connexion réussie.',
-            'data' => $authService->login(
+            'data' => $this->authService->login(
                 $credentials['email'],
                 $credentials['password'],
                 $request->ip() ?? 'unknown',
@@ -42,14 +46,11 @@ class AuthController extends Controller
         ]);
     }
 
-    public function profile(
-        Request $request,
-        AuthService $authService
-    ): JsonResponse {        
+    public function profile(Request $request): JsonResponse {        
         $user = $request->user();
 
         return response()->json([
-            'data' => $authService->userProfile($user),
+            'data' => $this->authService->userProfile($user),
         ]);
     }
 }

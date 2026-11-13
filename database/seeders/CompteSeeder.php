@@ -34,6 +34,7 @@ class CompteSeeder extends Seeder
                         'client_id' => $client->id,
                         'type_compte' => $type,
                         'solde' => $details['solde'],
+                        'solde_initial' => $details['solde'],
                         'devise' => 'XOF',
                         'date_ouverture' => today()->subMonths(6),
                         'statut_compte' => 'actif',

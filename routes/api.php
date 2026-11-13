@@ -2,6 +2,8 @@ use App\Models\User;
 <?php
 
 use App\Http\Controllers\Api\v1\AuthController;
+use App\Http\Controllers\Api\v1\ClientController;
+use App\Http\Controllers\Api\v1\CompteController;
 use App\Http\Controllers\Api\v1\RolePermissionController;
 use App\Http\Controllers\Api\v1\UtilisateurController;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +21,17 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('auth:sanctum')->group(function () {
+        Route::get('clients', [ClientController::class, 'lister']);
+        Route::post('clients', [ClientController::class, 'creer']);
+        Route::get('clients/{uuid}', [ClientController::class, 'consulter']);
+        Route::put('clients/{uuid}', [ClientController::class, 'modifier']);
+        Route::patch('clients/{uuid}', [ClientController::class, 'modifier']);
+
+        Route::get('comptes', [CompteController::class, 'lister']);
+        Route::post('clients/{uuid}/comptes', [CompteController::class, 'ouvrir']);
+        Route::get('comptes/{uuid}/releve', [CompteController::class, 'releve']);
+        Route::get('comptes/{uuid}', [CompteController::class, 'consulter']);
+
         Route::get('users', [UtilisateurController::class, 'lister']);
         Route::post('users', [UtilisateurController::class, 'creer']);
         Route::get('users/{uuid}/permissions', [UtilisateurController::class, 'permissionsUtilisateur']);

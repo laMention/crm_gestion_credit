@@ -10,36 +10,36 @@ use Illuminate\Http\Request;
 
 class RolePermissionController extends Controller
 {
-    public function listerRoles(
-        CatalogueRolesPermissionsService $catalogue
-    ): JsonResponse {
+    protected CatalogueRolesPermissionsService $catalogue;
+
+    public function __construct(CatalogueRolesPermissionsService $catalogue)
+    {
+        $this->catalogue = $catalogue;
+    }
+
+    public function listerRoles(): JsonResponse {
         $roles = array_map(
-            fn (UserRole $role): array => $catalogue->roleDefini($role),
+            fn (UserRole $role): array => $this->catalogue->roleDefini($role),
             UserRole::cases()
         );
 
         return response()->json(['data' => $roles]);
     }
 
-    public function consulterRole(
-        string $role,
-        CatalogueRolesPermissionsService $catalogue
-    ): JsonResponse {
+    public function consulterRole(string $role): JsonResponse {
         $roleDefini = UserRole::tryFrom($role);
 
         abort_if($roleDefini === null, 404);
 
         return response()->json([
-            'data' => $catalogue->roleDefini($roleDefini),
+            'data' => $this->catalogue->roleDefini($roleDefini),
         ]);
     }
 
-    public function listerPermissions(
-        CatalogueRolesPermissionsService $catalogue
-    ): JsonResponse {
+    public function listerPermissions(): JsonResponse {
         $modules = [];
 
-        foreach ($catalogue->permissionsDisponibles() as $permission) {
+        foreach ($this->catalogue->permissionsDisponibles() as $permission) {
             $modules[$permission['module']] ??= [
                 'id' => $permission['module'],
                 'libelle' => $permission['module_libelle'],
@@ -53,28 +53,22 @@ class RolePermissionController extends Controller
         ]);
     }
 
-    public function consulterPermission(
-        string $permission,
-        CatalogueRolesPermissionsService $catalogue
-    ): JsonResponse {
-        $definition = $catalogue->permissionDefinie($permission);
+    public function consulterPermission(string $permission): JsonResponse {
+        $definition = $this->catalogue->permissionDefinie($permission);
 
         abort_if($definition === null, 404);
 
         return response()->json(['data' => $definition]);
     }
 
-    public function permissionsConnecte(
-        Request $request,
-        CatalogueRolesPermissionsService $catalogue
-    ): JsonResponse {
+    public function permissionsConnecte(Request $request): JsonResponse {
         $user = $request->user();
 
         return response()->json([
             'data' => [
                 'utilisateur_uuid' => $user->uuid,
                 'role' => $user->role->value,
-                'permissions' => $catalogue->permissionsDeUtilisateur($user),
+                'permissions' => $this->catalogue->permissionsDeUtilisateur($user),
             ],
         ]);
     }

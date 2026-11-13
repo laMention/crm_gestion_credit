@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'numero_compte',
     'type_compte',
     'solde',
+    'solde_initial',
     'devise',
     'date_ouverture',
     'date_cloture',
