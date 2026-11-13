@@ -53,7 +53,13 @@ class CatalogueRolesPermissionsService
                     'utilisateurs' => ['consulterTout', 'consulter'],
                     'clients' => ['consulterTout', 'consulter', 'bloquer', 'debloquer'],
                     'comptes' => ['consulterTout', 'consulter', 'bloquer', 'debloquer', 'autoriserCloture'],
-                    'transactions' => ['consulterTout', 'consulter', 'validerRetrait', 'validerCorrection'],
+                    'transactions' => [
+                        'consulterTout',
+                        'consulter',
+                        'consulterRetraitsEnAttente',
+                        'validerRetrait',
+                        'validerCorrection',
+                    ],
                     'credits' => ['consulterTout', 'consulter', 'approuver', 'rejeter'],
                     'echeances' => ['consulterTout', 'consulter'],
                     'reportings' => ['consulterTout', 'consulter', 'exporterTout', 'exporter'],
@@ -134,7 +140,7 @@ class CatalogueRolesPermissionsService
                     'effectuerVirementAssiste' => 'Effectuer un virement assisté',
                     'bloquer' => 'Bloquer un compte',
                     'debloquer' => 'Débloquer un compte',
-                    'autoriserCloture' => 'Autoriser la clôture d’un compte',
+                    'autoriserCloture' => 'Autoriser la clôture d\'un compte',
                 ],
             ],
             'transactions' => [
@@ -142,6 +148,7 @@ class CatalogueRolesPermissionsService
                 'permissions' => [
                     'consulterTout' => 'Consulter la liste des transactions',
                     'consulter' => 'Consulter une transaction',
+                    'consulterRetraitsEnAttente' => 'Consulter les retraits en attente de validation',
                     'validerRetrait' => 'Valider un retrait soumis à approbation',
                     'soumettreCorrection' => 'Soumettre une demande de correction',
                     'validerCorrection' => 'Valider une demande de correction',
@@ -177,10 +184,10 @@ class CatalogueRolesPermissionsService
                 ],
             ],
             'journaux_audit' => [
-                'libelle' => 'Journaux d’audit',
+                'libelle' => 'Journaux d\'audit',
                 'permissions' => [
-                    'consulterTout' => 'Consulter les journaux d’audit',
-                    'consulter' => 'Consulter une entrée du journal d’audit',
+                    'consulterTout' => 'Consulter les journaux d\'audit',
+                    'consulter' => 'Consulter une entrée du journal d\'audit',
                 ],
             ],
         ];
@@ -273,21 +280,21 @@ class CatalogueRolesPermissionsService
     {
         return match ($identifiant) {
             'consulterTout' => 'Autorise la consultation de la collection dans le périmètre agence prévu pour le rôle.',
-            'consulter' => 'Autorise la consultation d’une ressource après vérification de son agence.',
+            'consulter' => 'Autorise la consultation d\'une ressource après vérification de son agence.',
             'creer' => 'Autorise la création de la ressource selon les règles de rattachement.',
             'modifier' => 'Autorise la modification de la ressource dans le périmètre autorisé.',
-            'activer' => 'Autorise l’activation d’un compte utilisateur.',
-            'desactiver' => 'Autorise la désactivation d’un compte utilisateur.',
-            'validerRetrait' => 'Autorise la validation d’un retrait éligible hors de ses propres opérations.',
-            'soumettreCorrection' => 'Autorise la soumission d’une demande de correction d’une transaction.',
-            'validerCorrection' => 'Autorise la validation d’une demande de correction hors de ses propres opérations.',
-            'preparerDemande' => 'Autorise la préparation d’une demande de crédit pour un compte de son agence.',
-            'modifierDemande' => 'Autorise la modification d’une demande de crédit en instruction créée par le conseiller.',
-            'soumettreDemande' => 'Autorise la soumission d’une demande de crédit créée par le conseiller.',
-            'approuver' => 'Autorise l’approbation d’un crédit de son agence, sauf une demande personnelle.',
-            'rejeter' => 'Autorise le rejet d’un crédit de son agence, sauf une demande personnelle.',
-            'exporterTout' => 'Autorise l’export des reportings dans le périmètre attribué au rôle.',
-            default => 'Autorise l’action « '.$identifiant.' » dans le périmètre défini pour le rôle.',
+            'activer' => 'Autorise l\'activation d\'un compte utilisateur.',
+            'desactiver' => 'Autorise la désactivation d\'un compte utilisateur.',
+            'validerRetrait' => 'Autorise la validation d\'un retrait éligible hors de ses propres opérations.',
+            'soumettreCorrection' => 'Autorise la soumission d\'une demande de correction d\'une transaction.',
+            'validerCorrection' => 'Autorise la validation d\'une demande de correction hors de ses propres opérations.',
+            'preparerDemande' => 'Autorise la préparation d\'une demande de crédit pour un compte de son agence.',
+            'modifierDemande' => 'Autorise la modification d\'une demande de crédit en instruction créée par le conseiller.',
+            'soumettreDemande' => 'Autorise la soumission d\'une demande de crédit créée par le conseiller.',
+            'approuver' => 'Autorise l\'approbation d\'un crédit de son agence, sauf une demande personnelle.',
+            'rejeter' => 'Autorise le rejet d\'un crédit de son agence, sauf une demande personnelle.',
+            'exporterTout' => 'Autorise l\'export des reportings dans le périmètre attribué au rôle.',
+            default => 'Autorise l\'action « '.$identifiant.' » dans le périmètre défini pour le rôle.',
         };
     }
 }

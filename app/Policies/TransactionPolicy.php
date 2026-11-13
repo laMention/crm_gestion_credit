@@ -16,6 +16,12 @@ class TransactionPolicy extends PolitiqueAgence
             || $user->agence_id !== null;
     }
 
+    public function consulterRetraitsEnAttente(User $user): bool
+    {
+        return $this->accesAgence->estChefAgence($user)
+            && $user->agence_id !== null;
+    }
+
     public function consulter(User $user, Transaction $transaction): bool|Response
     {
         return $this->verifierAccesAgence($user, $transaction->agence_id);

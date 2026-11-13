@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\ClientController;
 use App\Http\Controllers\Api\v1\CompteController;
 use App\Http\Controllers\Api\v1\RolePermissionController;
+use App\Http\Controllers\Api\v1\TransactionController;
 use App\Http\Controllers\Api\v1\UtilisateurController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,7 +31,25 @@ Route::prefix('v1')->group(function () {
         Route::get('comptes', [CompteController::class, 'lister']);
         Route::post('clients/{uuid}/comptes', [CompteController::class, 'ouvrir']);
         Route::get('comptes/{uuid}/releve', [CompteController::class, 'releve']);
+        Route::post('comptes/{uuid}/depots', [TransactionController::class, 'deposer']);
+        Route::post('comptes/{uuid}/retraits', [TransactionController::class, 'retirer']);
+        Route::post('comptes/{uuid}/virements', [TransactionController::class, 'virer']);
         Route::get('comptes/{uuid}', [CompteController::class, 'consulter']);
+
+        Route::get('transactions', [TransactionController::class, 'lister']);
+        Route::get('transactions/retraits-en-attente', [
+            TransactionController::class,
+            'listerRetraitsEnAttente',
+        ]);
+        Route::get('transactions/{uuid}', [TransactionController::class, 'consulter']);
+        Route::patch('transactions/{uuid}/approuver', [
+            TransactionController::class,
+            'approuverRetrait',
+        ]);
+        Route::patch('transactions/{uuid}/rejeter', [
+            TransactionController::class,
+            'rejeterRetrait',
+        ]);
 
         Route::get('users', [UtilisateurController::class, 'lister']);
         Route::post('users', [UtilisateurController::class, 'creer']);
