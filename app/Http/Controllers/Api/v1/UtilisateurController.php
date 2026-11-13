@@ -7,64 +7,41 @@ use App\Http\Requests\Api\V1\CreerUtilisateurRequest;
 use App\Http\Requests\Api\V1\ListerUtilisateursRequest;
 use App\Http\Requests\Api\V1\ModifierUtilisateurRequest;
 use App\Http\Resources\Api\v1\UtilisateurResource;
-use App\Models\User;
 use App\Services\Authorization\CatalogueRolesPermissionsService;
-use Illuminate\Database\Eloquent\Builder;
+use App\Services\GestionUtilisateursService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class UtilisateurController extends Controller
 {
+    protected GestionUtilisateursService $gestionUtilisateurs;
+
+    public function __construct(GestionUtilisateursService $gestionUtilisateurs)
+    {
+        $this->gestionUtilisateurs = $gestionUtilisateurs;
+    }
+
     public function lister(
         ListerUtilisateursRequest $request
     ): AnonymousResourceCollection {
-        $utilisateurs = User::query()
-            ->accessiblePar($request->user())
-            ->with('agence:id,uuid,code_agence,nom_agence,ville_agence')
-            ->when(
-                $request->filled('recherche'),
-                function (Builder $requete, string $recherche): void {
-                    $terme = '%'.$recherche.'%';
-                    $requete->where(function (Builder $requeteRecherche) use ($terme): void {
-                        $requeteRecherche
-                            ->where('nom', 'like', $terme)
-                            ->orWhere('prenom', 'like', $terme)
-                            ->orWhere('email', 'like', $terme)
-                            ->orWhere('telephone', 'like', $terme);
-                    });
-                }
-            )
-            ->when(
-                $request->validated('role'),
-                fn (Builder $requete, string $role): Builder => $requete->where('role', $role)
-            )
-            ->when(
-                $request->validated('agence_id'),
-                fn (Builder $requete, int $agenceId): Builder => $requete->where(
-                    'agence_id',
-                    $agenceId
-                )
-            )
-            ->when(
-                $request->exists('actif'),
-                fn (Builder $requete): Builder => $requete->where(
-                    'actif',
-                    $request->validated('actif')
-                )
-            )
-            ->orderBy('nom')
-            ->orderBy('prenom')
-            ->orderBy('id')
-            ->paginate($request->validated('per_page', 15));
+        $utilisateurs = $this->gestionUtilisateurs->lister(
+            $request->user(),
+            $request->validated()
+        );
 
         return UtilisateurResource::collection($utilisateurs)
             ->additional(['message' => 'Liste des utilisateurs.']);
     }
 
-    public function consulter(Request $request, string $uuid): UtilisateurResource
-    {
-        $utilisateur = $this->trouverUtilisateurAccessible($request, $uuid);
+    public function consulter(
+        Request $request,
+        string $uuid
+    ): UtilisateurResource {
+        $utilisateur = $this->gestionUtilisateurs->trouverAccessibleParUuid(
+            $request->user(),
+            $uuid
+        );
         $this->authorize('consulter', $utilisateur);
 
         return new UtilisateurResource($utilisateur);
@@ -73,8 +50,7 @@ class UtilisateurController extends Controller
     public function creer(
         CreerUtilisateurRequest $request
     ): JsonResponse {
-        $utilisateur = User::query()->create($request->validated());
-        $utilisateur->load('agence:id,uuid,code_agence,nom_agence,ville_agence');
+        $utilisateur = $this->gestionUtilisateurs->creer($request->validated());
 
         return (new UtilisateurResource($utilisateur))
             ->additional(['message' => 'Utilisateur créé.'])
@@ -86,36 +62,45 @@ class UtilisateurController extends Controller
         ModifierUtilisateurRequest $request,
         string $uuid
     ): UtilisateurResource {
-        $utilisateur = $this->trouverUtilisateurAccessible($request, $uuid);
+        $utilisateur = $this->gestionUtilisateurs->trouverAccessibleParUuid(
+            $request->user(),
+            $uuid
+        );
         $this->authorize('modifier', $utilisateur);
 
-        $utilisateur->fill($request->validated())->save();
-        $utilisateur->load('agence:id,uuid,code_agence,nom_agence,ville_agence');
+        $utilisateur = $this->gestionUtilisateurs->modifier($utilisateur, $request->validated());
 
         return (new UtilisateurResource($utilisateur))
             ->additional(['message' => 'Utilisateur modifié.']);
     }
 
-    public function activer(Request $request, string $uuid): UtilisateurResource
-    {
-        $utilisateur = $this->trouverUtilisateurAccessible($request, $uuid);
+    public function activer(
+        Request $request,
+        string $uuid
+    ): UtilisateurResource {
+        $utilisateur = $this->gestionUtilisateurs->trouverAccessibleParUuid(
+            $request->user(),
+            $uuid
+        );
         $this->authorize('activer', $utilisateur);
 
-        $utilisateur->forceFill(['actif' => true])->save();
-        $utilisateur->load('agence:id,uuid,code_agence,nom_agence,ville_agence');
+        $utilisateur = $this->gestionUtilisateurs->activer($utilisateur);
 
         return (new UtilisateurResource($utilisateur))
             ->additional(['message' => 'Utilisateur activé.']);
     }
 
-    public function desactiver(Request $request, string $uuid): UtilisateurResource
-    {
-        $utilisateur = $this->trouverUtilisateurAccessible($request, $uuid);
+    public function desactiver(
+        Request $request,
+        string $uuid
+    ): UtilisateurResource {
+        $utilisateur = $this->gestionUtilisateurs->trouverAccessibleParUuid(
+            $request->user(),
+            $uuid
+        );
         $this->authorize('desactiver', $utilisateur);
 
-        $utilisateur->forceFill(['actif' => false])->save();
-        $utilisateur->tokens()->delete();
-        $utilisateur->load('agence:id,uuid,code_agence,nom_agence,ville_agence');
+        $utilisateur = $this->gestionUtilisateurs->desactiver($utilisateur);
 
         return (new UtilisateurResource($utilisateur))
             ->additional(['message' => 'Utilisateur désactivé.']);
@@ -124,9 +109,12 @@ class UtilisateurController extends Controller
     public function permissionsUtilisateur(
         Request $request,
         string $uuid,
-        CatalogueRolesPermissionsService $catalogue
+        CatalogueRolesPermissionsService $catalogue        
     ): JsonResponse {
-        $utilisateur = $this->trouverUtilisateurAccessible($request, $uuid);
+        $utilisateur = $this->gestionUtilisateurs->trouverAccessibleParUuid(
+            $request->user(),
+            $uuid
+        );
         $this->authorize('consulter', $utilisateur);
 
         return response()->json([
@@ -136,16 +124,5 @@ class UtilisateurController extends Controller
                 'permissions' => $catalogue->permissionsDeUtilisateur($utilisateur),
             ],
         ]);
-    }
-
-    private function trouverUtilisateurAccessible(
-        Request $request,
-        string $uuid
-    ): User {
-        return User::query()
-            ->accessiblePar($request->user())
-            ->with('agence:id,uuid,code_agence,nom_agence,ville_agence')
-            ->where('uuid', $uuid)
-            ->firstOrFail();
     }
 }

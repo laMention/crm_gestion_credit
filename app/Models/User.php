@@ -50,6 +50,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'actif' => 'boolean',
             'derniere_connexion_le' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     }
 

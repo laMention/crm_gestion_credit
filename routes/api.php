@@ -1,3 +1,4 @@
+use App\Models\User;
 <?php
 
 use App\Http\Controllers\Api\v1\AuthController;
@@ -20,10 +21,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('users', [UtilisateurController::class, 'lister']);
         Route::post('users', [UtilisateurController::class, 'creer']);
-        Route::get('users/{uuid}/permissions', [
-            UtilisateurController::class,
-            'permissionsUtilisateur',
-        ]);
+        Route::get('users/{uuid}/permissions', [UtilisateurController::class, 'permissionsUtilisateur']);
         Route::get('users/{uuid}', [UtilisateurController::class, 'consulter']);
         Route::put('users/{uuid}', [UtilisateurController::class, 'modifier']);
         Route::patch('users/{uuid}', [UtilisateurController::class, 'modifier']);
