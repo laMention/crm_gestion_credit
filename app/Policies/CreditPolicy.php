@@ -55,7 +55,7 @@ class CreditPolicy extends PolitiqueAgence
         return $acces === true
             && $user->role === UserRole::CONSEILLER
             && $credit->conseiller_client_id === $user->id
-            && in_array($credit->statut, ['en_attente', 'en_etude'], true);
+            && $credit->statut === 'en_etude';
     }
 
     public function approuver(User $user, Credit $credit): bool|Response
@@ -91,6 +91,7 @@ class CreditPolicy extends PolitiqueAgence
 
         return $acces === true
             && $this->accesAgence->estChefAgence($user)
-            && $credit->conseiller_client_id !== $user->id;
+            && $credit->conseiller_client_id !== $user->id
+            && $credit->statut === 'en_attente';
     }
 }

@@ -9,10 +9,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
-use App\Models\User;
-use App\Models\Credit;
+
 #[Fillable([
     'credit_id',
     'numero_echeance',
@@ -53,6 +52,11 @@ class EcheanceCredit extends Model
     public function credit(): BelongsTo
     {
         return $this->belongsTo(Credit::class);
+    }
+
+    public function remboursements(): HasMany
+    {
+        return $this->hasMany(RemboursementEcheance::class, 'echeance_credit_id');
     }
 
     public function getRouteKeyName(): string

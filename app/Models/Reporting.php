@@ -10,6 +10,22 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+use Illuminate\Support\Facades\Route;
+use App\Models\Agence;
+use App\Models\Credit;
+use App\Models\RemboursementEcheance;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\EcheanceCredit;
+use Illuminate\Support\Facades\DB;
+use App\Models\Compte;
+use App\Models\Client;
+use Illuminate\Support\Facades\Gate;
+use App\Models\Transaction;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
+use App\Models\AuditLog;
+use App\Models\User;
 #[Fillable([
     'agence_id',
     'date_reporting',

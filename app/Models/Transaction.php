@@ -9,8 +9,15 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+use App\Models\Credit;
+use App\Models\RemboursementEcheance;
+use App\Models\User;
+use App\Models\Compte;
+use App\Models\Agence;
+use App\Models\Client;
 #[Fillable([
     'reference_transaction',
     'agence_id',
@@ -82,6 +89,11 @@ class Transaction extends Model
     public function compteDestinataire(): BelongsTo
     {
         return $this->belongsTo(Compte::class, 'compte_destinataire_id');
+    }
+
+    public function remboursementsEcheances(): HasMany
+    {
+        return $this->hasMany(RemboursementEcheance::class);
     }
 
     #[Scope]

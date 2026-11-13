@@ -4,6 +4,8 @@ use App\Models\User;
 use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\ClientController;
 use App\Http\Controllers\Api\v1\CompteController;
+use App\Http\Controllers\Api\v1\CreditController;
+use App\Http\Controllers\Api\v1\EcheanceCreditController;
 use App\Http\Controllers\Api\v1\RolePermissionController;
 use App\Http\Controllers\Api\v1\TransactionController;
 use App\Http\Controllers\Api\v1\UtilisateurController;
@@ -50,6 +52,21 @@ Route::prefix('v1')->group(function () {
             TransactionController::class,
             'rejeterRetrait',
         ]);
+
+        Route::get('credits', [CreditController::class, 'lister']);
+        Route::get('credits/suivi', [CreditController::class, 'suivi']);
+        Route::post('comptes/{uuid}/credits', [CreditController::class, 'creer']);
+        Route::get('credits/{uuid}', [CreditController::class, 'consulter']);
+        Route::patch('credits/{uuid}', [CreditController::class, 'modifier']);
+        Route::post('credits/{uuid}/soumettre', [CreditController::class, 'soumettre']);
+        Route::patch('credits/{uuid}/approuver', [CreditController::class, 'approuver']);
+        Route::patch('credits/{uuid}/rejeter', [CreditController::class, 'rejeter']);
+        Route::post('credits/{uuid}/remboursements', [
+            CreditController::class,
+            'rembourser',
+        ]);
+        Route::get('echeances', [EcheanceCreditController::class, 'lister']);
+        Route::get('echeances/{uuid}', [EcheanceCreditController::class, 'consulter']);
 
         Route::get('users', [UtilisateurController::class, 'lister']);
         Route::post('users', [UtilisateurController::class, 'creer']);
