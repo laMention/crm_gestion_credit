@@ -19,6 +19,13 @@ use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use UnexpectedValueException;
 
+use App\Models\EcheanceCredit;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Credit;
+use App\Models\RemboursementEcheance;
+use App\Models\Agence;
 // use Carbon\Carbon;
 class OperationsFinancieresService
 {
