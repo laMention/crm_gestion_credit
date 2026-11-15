@@ -114,7 +114,8 @@ class GestionCreditsTest extends TestCase
         $agence = $this->creerAgence('AG-CRE-4');
         $conseiller = $this->creerUtilisateur(UserRole::CONSEILLER, $agence);
         $chefAgence = $this->creerUtilisateur(UserRole::CHEF_AGENCE, $agence);
-        $compte = $this->creerCompte($this->creerClient($agence));
+        $client = $this->creerClient($agence, ['revenu_mensuel' => '833.35']);
+        $compte = $this->creerCompte($client);
         $credit = $this->creerDemandeSoumise($conseiller, $compte);
 
         $this->actingAs($chefAgence, 'sanctum')
@@ -157,6 +158,99 @@ class GestionCreditsTest extends TestCase
         $this->assertSame(1, Transaction::query()
             ->where('type_transaction', 'deboursement')
             ->count());
+    }
+
+    public function test_credit_approval_is_rejected_when_monthly_installment_exceeds_40_percent_of_income(): void
+    {
+        $agence = $this->creerAgence('AG-CRE-15');
+        $conseiller = $this->creerUtilisateur(UserRole::CONSEILLER, $agence);
+        $chefAgence = $this->creerUtilisateur(UserRole::CHEF_AGENCE, $agence);
+        $client = $this->creerClient($agence, ['revenu_mensuel' => '500.00']);
+        $compte = $this->creerCompte($client);
+        $credit = $this->creerDemandeSoumise($conseiller, $compte);
+
+        $this->actingAs($chefAgence, 'sanctum')
+            ->patchJson('/api/v1/credits/'.$credit->uuid.'/approuver')
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'message',
+                'La somme des mensualités dépasse 40 % du revenu mensuel du client.'
+            );
+
+        $this->assertDatabaseHas('credits', [
+            'id' => $credit->id,
+            'statut' => 'en_attente',
+            'date_deboursement' => null,
+        ]);
+        $this->assertDatabaseCount('transactions', 0);
+        $this->assertDatabaseCount('echeance_credits', 0);
+        $this->assertDatabaseHas('comptes', [
+            'id' => $compte->id,
+            'solde' => '0.00',
+        ]);
+    }
+
+    public function test_credit_approval_is_rejected_when_monthly_income_is_missing(): void
+    {
+        $agence = $this->creerAgence('AG-CRE-16');
+        $conseiller = $this->creerUtilisateur(UserRole::CONSEILLER, $agence);
+        $chefAgence = $this->creerUtilisateur(UserRole::CHEF_AGENCE, $agence);
+        $client = $this->creerClient($agence, ['revenu_mensuel' => null]);
+        $compte = $this->creerCompte($client);
+        $credit = $this->creerDemandeSoumise($conseiller, $compte);
+
+        $this->actingAs($chefAgence, 'sanctum')
+            ->patchJson('/api/v1/credits/'.$credit->uuid.'/approuver')
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'message',
+                'Le revenu mensuel du client doit être renseigné pour évaluer sa capacité de remboursement.'
+            );
+
+        $this->assertDatabaseHas('credits', [
+            'id' => $credit->id,
+            'statut' => 'en_attente',
+            'date_deboursement' => null,
+        ]);
+        $this->assertDatabaseCount('transactions', 0);
+        $this->assertDatabaseCount('echeance_credits', 0);
+    }
+
+    public function test_credit_approval_includes_existing_monthly_installments_in_the_capacity_check(): void
+    {
+        $agence = $this->creerAgence('AG-CRE-17');
+        $conseiller = $this->creerUtilisateur(UserRole::CONSEILLER, $agence);
+        $chefAgence = $this->creerUtilisateur(UserRole::CHEF_AGENCE, $agence);
+        $client = $this->creerClient($agence, ['revenu_mensuel' => '1000.00']);
+        $premierCompte = $this->creerCompte($client);
+        $premierCredit = $this->creerDemandeSoumise($conseiller, $premierCompte);
+
+        $this->actingAs($chefAgence, 'sanctum')
+            ->patchJson('/api/v1/credits/'.$premierCredit->uuid.'/approuver')
+            ->assertOk();
+
+        $secondCompte = $this->creerCompte($client);
+        $secondCredit = $this->creerDemandeSoumise($conseiller, $secondCompte);
+
+        $this->actingAs($chefAgence, 'sanctum')
+            ->patchJson('/api/v1/credits/'.$secondCredit->uuid.'/approuver')
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'message',
+                'La somme des mensualités dépasse 40 % du revenu mensuel du client.'
+            );
+
+        $this->assertDatabaseHas('credits', [
+            'id' => $secondCredit->id,
+            'statut' => 'en_attente',
+            'date_deboursement' => null,
+        ]);
+        $this->assertDatabaseCount('transactions', 1);
+        $this->assertDatabaseCount('echeance_credits', 3);
+        $this->assertDatabaseHas('comptes', [
+            'id' => $secondCompte->id,
+            'solde' => '0.00',
+        ]);
     }
 
     public function test_adviser_cannot_approve_and_manager_cannot_decide_for_another_branch(): void
@@ -460,6 +554,7 @@ class GestionCreditsTest extends TestCase
             'telephone_client' => '0701000000',
             'ville_client' => 'Abidjan',
             'email_client' => 'client.'.strtolower(fake()->unique()->bothify('??????##')).'@example.test',
+            'revenu_mensuel' => '10000.00',
             'statut' => 'actif',
             ...$remplacements,
         ]);

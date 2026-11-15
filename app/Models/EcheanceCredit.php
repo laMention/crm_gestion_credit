@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+use App\Models\Credit;
+use App\Models\RemboursementEcheance;
 #[Fillable([
     'credit_id',
     'numero_echeance',
@@ -74,4 +76,12 @@ class EcheanceCredit extends Model
             'credit.compte'
         );
     }
+
+    // Identifier les échéances en retard pour un utilisateur donné
+    // public function scopeEnRetard(Builder $query, User $utilisateur): void
+    // {
+    //     $query->whereDate('date_echeance', '<', today())
+    //         ->whereColumn('montant_paye', '<', 'montant_echeance')
+    //         ->where('statut_echeance_credit', '!=', 'annule');
+    // }
 }

@@ -7,6 +7,21 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+use App\Models\Agence;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Route;
+use App\Models\Compte;
+use App\Models\Transaction;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
+use App\Models\EcheanceCredit;
+use App\Models\Credit;
+use App\Models\RemboursementEcheance;
+use App\Models\User;
+use App\Models\Reporting;
+use App\Models\AuditLog;
 class CreerClientRequest extends FormRequest
 {
     public function authorize(): bool

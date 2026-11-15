@@ -12,6 +12,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+use App\Models\Client;
+use App\Models\Compte;
+use App\Models\User;
+use App\Models\EcheanceCredit;
 #[Fillable([
     'compte_id',
     'conseiller_client_id',

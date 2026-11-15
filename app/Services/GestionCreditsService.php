@@ -26,6 +26,8 @@ class GestionCreditsService
 
     private const int MONTANT_MAXIMUM_CENTIMES = 999_999_999_999_999;
 
+    private const int TAUX_MAXIMUM_CAPACITE_REMBOURSEMENT = 40;
+
     public function __construct(
         private readonly AuditLogService $journalAudit
     ) {}
@@ -411,6 +413,68 @@ class GestionCreditsService
                 (float) $credit->taux_interet_annuel,
                 (int) $credit->duree_mois
             );
+            $revenuMensuelCentimes = $client->revenu_mensuel === null
+                ? 0
+                : $this->montantEnCentimes((string) $client->revenu_mensuel);
+
+            if ($revenuMensuelCentimes <= 0) {
+                throw new HttpException(
+                    422,
+                    'Le revenu mensuel du client doit être renseigné pour évaluer sa capacité de remboursement.'
+                );
+            }
+
+            $mensualiteMaximaleCentimes = max(array_map(
+                fn (array $echeance): int => $this->montantEnCentimes(
+                    $echeance['montant_echeance']
+                ),
+                $echeancier['echeances']
+            ));
+            $capaciteMensuelleCentimes = intdiv(
+                $revenuMensuelCentimes * self::TAUX_MAXIMUM_CAPACITE_REMBOURSEMENT,
+                100
+            );
+
+            $mensualitesExistantes = Credit::query()
+                ->whereHas(
+                    'compte',
+                    fn (Builder $comptes): Builder => $comptes->where(
+                        'client_id',
+                        $client->id
+                    )
+                )
+                ->whereIn('statut', ['debourse', 'en_remboursement', 'en_retard'])
+                ->get(['mensualite']);
+
+            foreach ($mensualitesExistantes as $creditExistant) {
+                if ($creditExistant->mensualite === null) {
+                    throw new HttpException(
+                        422,
+                        'La capacité de remboursement ne peut pas être calculée pour un crédit existant.'
+                    );
+                }
+
+                $mensualiteExistanteCentimes = $this->montantEnCentimes(
+                    (string) $creditExistant->mensualite
+                );
+
+                if ($mensualiteExistanteCentimes >= $capaciteMensuelleCentimes) {
+                    throw new HttpException(
+                        422,
+                        'La mensualité dépasse 40 % du revenu mensuel du client.'
+                    );
+                }
+
+                $capaciteMensuelleCentimes -= $mensualiteExistanteCentimes;
+            }
+
+            if ($mensualiteMaximaleCentimes > $capaciteMensuelleCentimes) {
+                throw new HttpException(
+                    422,
+                    'La somme des mensualités dépasse 40 % du revenu mensuel du client.'
+                );
+            }
+
             $dateDebutRemboursement = Carbon::today()->addMonthNoOverflow();
 
             $transaction = $this->creerTransactionCredit(
