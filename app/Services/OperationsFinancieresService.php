@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use UnexpectedValueException;
+
 // use Carbon\Carbon;
 class OperationsFinancieresService
 {
@@ -26,7 +27,8 @@ class OperationsFinancieresService
     private const int SOLDE_MAXIMUM_CENTIMES = 999_999_999_999_999;
 
     public function __construct(
-        private readonly AccesAgenceService $accesAgence
+        private readonly AccesAgenceService $accesAgence,
+        private readonly AuditLogService $journalAudit
     ) {}
 
     public function trouverCompteAccessibleParUuid(User $utilisateur, string $uuid): Compte
@@ -57,6 +59,7 @@ class OperationsFinancieresService
 
     /**
      * Liste des transactions avec fiultrage
+     *
      * @param array{
      *     reference_transaction?: string,
      *     numero_compte?: string,
@@ -173,7 +176,7 @@ class OperationsFinancieresService
 
     /**
      * @return array{transaction: Transaction, rejouee: bool}
-     * Depot d'argent sur un compte client
+     *                                                        Depot d'argent sur un compte client
      */
     public function deposer(
         User $utilisateur,
@@ -240,6 +243,21 @@ class OperationsFinancieresService
                 );
 
                 $compte->forceFill(['solde' => $nouveauSolde])->save();
+                $this->journalAudit->enregistrer(
+                    $utilisateur,
+                    'transaction.depot',
+                    'transactions',
+                    'transaction',
+                    $transaction->id,
+                    [],
+                    [
+                        'reference_transaction' => $transaction->reference_transaction,
+                        'type_transaction' => 'depot',
+                        'montant' => $transaction->montant,
+                        'statut_transaction' => 'terminee',
+                    ],
+                    agenceId: $compte->agence_id
+                );
                 $transaction->load($this->relationsTransaction());
 
                 return ['transaction' => $transaction, 'rejouee' => false];
@@ -249,7 +267,7 @@ class OperationsFinancieresService
 
     /**
      * @return array{transaction: Transaction, rejouee: bool}
-     * Retrait d'argent sur un compte client
+     *                                                        Retrait d'argent sur un compte client
      */
     public function retirer(
         User $utilisateur,
@@ -326,6 +344,23 @@ class OperationsFinancieresService
                     ])->save();
                 }
 
+                $this->journalAudit->enregistrer(
+                    $utilisateur,
+                    $retraitEnAttente
+                        ? 'transaction.retrait_soumis_validation'
+                        : 'transaction.retrait',
+                    'transactions',
+                    'transaction',
+                    $transaction->id,
+                    [],
+                    [
+                        'reference_transaction' => $transaction->reference_transaction,
+                        'type_transaction' => 'retrait',
+                        'montant' => $transaction->montant,
+                        'statut_transaction' => $transaction->statut_transaction,
+                    ],
+                    agenceId: $compte->agence_id
+                );
                 $transaction->load($this->relationsTransaction());
 
                 return ['transaction' => $transaction, 'rejouee' => false];
@@ -335,7 +370,7 @@ class OperationsFinancieresService
 
     /**
      * @return array{transaction: Transaction, rejouee: bool}
-     * Faire un virement entre deux comptes client
+     *                                                        Faire un virement entre deux comptes client
      */
     public function virer(
         User $utilisateur,
@@ -433,6 +468,23 @@ class OperationsFinancieresService
                 $compteDestinataire->forceFill([
                     'solde' => $nouveauSoldeDestinataire,
                 ])->save();
+                $this->journalAudit->enregistrer(
+                    $utilisateur,
+                    'transaction.virement',
+                    'transactions',
+                    'transaction',
+                    $transaction->id,
+                    [],
+                    [
+                        'reference_transaction' => $transaction->reference_transaction,
+                        'type_transaction' => 'virement',
+                        'montant' => $transaction->montant,
+                        'statut_transaction' => 'terminee',
+                        'compte_source_id' => $compteSource->id,
+                        'compte_destinataire_id' => $compteDestinataire->id,
+                    ],
+                    agenceId: $compteSource->agence_id
+                );
                 $transaction->load($this->relationsTransaction());
 
                 return ['transaction' => $transaction, 'rejouee' => false];
@@ -476,6 +528,20 @@ class OperationsFinancieresService
                 'valide_par' => $validateur->id,
                 'date_validation' => now(),
             ])->save();
+            $this->journalAudit->enregistrer(
+                $validateur,
+                'transaction.retrait_approuve',
+                'transactions',
+                'transaction',
+                $transaction->id,
+                ['statut_transaction' => 'en_attente'],
+                [
+                    'reference_transaction' => $transaction->reference_transaction,
+                    'statut_transaction' => 'terminee',
+                    'montant' => $transaction->montant,
+                ],
+                agenceId: $compte->agence_id
+            );
 
             return $transaction->load($this->relationsTransaction());
         }, 3);
@@ -513,6 +579,19 @@ class OperationsFinancieresService
                 'date_validation' => now(),
                 'motif' => $motifComplet,
             ])->save();
+            $this->journalAudit->enregistrer(
+                $validateur,
+                'transaction.retrait_rejete',
+                'transactions',
+                'transaction',
+                $transaction->id,
+                ['statut_transaction' => 'en_attente'],
+                [
+                    'reference_transaction' => $transaction->reference_transaction,
+                    'statut_transaction' => 'annulee',
+                ],
+                agenceId: $transaction->agence_id
+            );
 
             return $transaction->load($this->relationsTransaction());
         }, 3);
@@ -545,7 +624,7 @@ class OperationsFinancieresService
 
     /**
      * @return array{transaction: Transaction, rejouee: bool}|null
-     * Vérifie si une opération avec la même clé d'idempotence a déjà été effectuée
+     *                                                             Vérifie si une opération avec la même clé d'idempotence a déjà été effectuée
      */
     private function rejouerSiExistante(
         string $cleIdempotence,
@@ -562,7 +641,7 @@ class OperationsFinancieresService
 
     /**
      * @return array{transaction: Transaction, rejouee: bool}
-     * Résultat d'une opération rejouée avec la même clé d'idempotence
+     *                                                        Résultat d'une opération rejouée avec la même clé d'idempotence
      */
     private function resultatRejoue(
         Transaction $transaction,

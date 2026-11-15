@@ -4,6 +4,7 @@ namespace Tests\Feature\Api\V1;
 
 use App\Enums\UserRole;
 use App\Models\Agence;
+use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\Compte;
 use App\Models\Transaction;
@@ -50,6 +51,16 @@ class OperationsFinancieresTest extends TestCase
             1,
             Transaction::query()->where('cle_idempotence', 'depot-unique-001')->count()
         );
+        $this->assertSame(
+            1,
+            AuditLog::query()->where('action', 'transaction.depot')->count()
+        );
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $caissier->id,
+            'agence_id' => $agence->id,
+            'action' => 'transaction.depot',
+            'resultat' => 'succes',
+        ]);
     }
 
     public function test_same_idempotency_key_with_different_operation_is_rejected(): void
@@ -137,6 +148,7 @@ class OperationsFinancieresTest extends TestCase
         )->assertUnprocessable();
 
         $this->assertDatabaseCount('transactions', 0);
+        $this->assertDatabaseCount('audit_logs', 0);
     }
 
     public function test_withdrawal_debits_atomically_and_rejects_insufficient_funds_or_blocked_client(): void
@@ -178,6 +190,10 @@ class OperationsFinancieresTest extends TestCase
             'solde' => '375.25',
         ]);
         $this->assertSame(1, Transaction::query()->count());
+        $this->assertSame(
+            1,
+            AuditLog::query()->where('action', 'transaction.retrait')->count()
+        );
 
         $compteBloque = $this->creerCompte(
             $this->creerClient($agence, [

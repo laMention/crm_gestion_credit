@@ -70,6 +70,7 @@ class ClientController extends Controller
         $this->authorize('modifier', $client);
 
         $client = $this->gestionClientsComptes->modifierClient(
+            $request->user(),
             $client,
             $request->validated()
         );

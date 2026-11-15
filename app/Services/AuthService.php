@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Agence;
 use App\Models\User;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Cache\RateLimiter;
@@ -9,15 +10,6 @@ use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-use App\Models\Agence;
-use App\Models\Compte;
-use App\Models\Client;
-use App\Models\Transaction;
-use App\Models\Credit;
-use App\Models\AuditLog;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 class AuthService
 {
     private const NB_MAX_TENTATIVE = 5;
@@ -28,6 +20,7 @@ class AuthService
 
     public function __construct(
         private readonly RateLimiter $rateLimiter,
+        private readonly AuditLogService $journalAudit,
     ) {}
 
     /**
@@ -50,6 +43,14 @@ class AuthService
 
         if ($this->rateLimiter->tooManyAttempts($limiterKey, self::NB_MAX_TENTATIVE)) {
             $retryAfter = $this->rateLimiter->availableIn($limiterKey);
+            $this->journalAudit->enregistrer(
+                null,
+                'authentification.connexion_echouee',
+                'authentification',
+                'utilisateur',
+                resultat: 'echec',
+                description: 'Tentative de connexion bloquée par la limitation de débit.'
+            );
 
             throw new ThrottleRequestsException(
                 'Trop de tentatives de connexion. Réessayez dans une minute.',
@@ -68,6 +69,15 @@ class AuthService
 
         if (! $user || ! $user->actif || ! $passwordMatches) {
             $this->rateLimiter->hit($limiterKey, self::DECOMPTE_SECONDE_CONNEXION);
+            $this->journalAudit->enregistrer(
+                $user,
+                'authentification.connexion_echouee',
+                'authentification',
+                'utilisateur',
+                $user?->id,
+                resultat: 'echec',
+                description: 'Échec de connexion. Aucun secret de connexion n’est conservé.'
+            );
 
             throw new AuthenticationException('Informations de connexion invalides.');
         }
@@ -75,6 +85,15 @@ class AuthService
         $this->rateLimiter->clear($limiterKey);
         $user->forceFill(['derniere_connexion_le' => now()])->save();
         $token = $user->createToken($deviceName)->plainTextToken;
+        $this->journalAudit->enregistrer(
+            $user,
+            'authentification.connexion_reussie',
+            'authentification',
+            'utilisateur',
+            $user->id,
+            [],
+            ['resultat' => 'reussie']
+        );
 
         return [
             'token' => $token,

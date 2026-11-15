@@ -1,11 +1,13 @@
 use App\Models\User;
 <?php
 
+use App\Http\Controllers\Api\v1\AuditLogController;
 use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\ClientController;
 use App\Http\Controllers\Api\v1\CompteController;
 use App\Http\Controllers\Api\v1\CreditController;
 use App\Http\Controllers\Api\v1\EcheanceCreditController;
+use App\Http\Controllers\Api\v1\ReportingController;
 use App\Http\Controllers\Api\v1\RolePermissionController;
 use App\Http\Controllers\Api\v1\TransactionController;
 use App\Http\Controllers\Api\v1\UtilisateurController;
@@ -67,6 +69,16 @@ Route::prefix('v1')->group(function () {
         ]);
         Route::get('echeances', [EcheanceCreditController::class, 'lister']);
         Route::get('echeances/{uuid}', [EcheanceCreditController::class, 'consulter']);
+
+        Route::get('reportings/indicateurs', [ReportingController::class, 'indicateurs']);
+        Route::get('reportings/transactions', [ReportingController::class, 'transactions']);
+        Route::get('reportings/export', [ReportingController::class, 'exporter']);
+        Route::post('reportings/generer', [ReportingController::class, 'generer']);
+        Route::get('reportings', [ReportingController::class, 'lister']);
+        Route::get('reportings/{uuid}', [ReportingController::class, 'consulter']);
+
+        Route::get('journaux-audit', [AuditLogController::class, 'lister']);
+        Route::get('journaux-audit/{uuid}', [AuditLogController::class, 'consulter']);
 
         Route::get('users', [UtilisateurController::class, 'lister']);
         Route::post('users', [UtilisateurController::class, 'creer']);

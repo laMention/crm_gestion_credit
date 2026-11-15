@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\Compte;
 use App\Models\Credit;
@@ -26,6 +25,10 @@ class GestionCreditsService
     private const int DUREE_MAXIMALE_MOIS = 600;
 
     private const int MONTANT_MAXIMUM_CENTIMES = 999_999_999_999_999;
+
+    public function __construct(
+        private readonly AuditLogService $journalAudit
+    ) {}
 
     public function listerCredits(User $utilisateur, array $filtres): LengthAwarePaginator
     {
@@ -258,6 +261,20 @@ class GestionCreditsService
                 'statut' => 'en_etude',
                 'observations' => $donnees['observations'] ?? null,
             ]);
+            $this->journalAudit->enregistrer(
+                $utilisateur,
+                'credit.demande_creee',
+                'credits',
+                'credit',
+                $credit->id,
+                [],
+                [
+                    'statut' => 'en_etude',
+                    'montant_demande' => $credit->montant_demande,
+                    'duree_mois' => $credit->duree_mois,
+                ],
+                agenceId: $compte->agence_id
+            );
 
             return $this->chargerCredit($credit, $utilisateur);
         }, 3);
@@ -271,6 +288,11 @@ class GestionCreditsService
         return DB::transaction(function () use ($utilisateur, $uuid, $donnees): Credit {
             $credit = $this->verrouillerCredit($utilisateur, $uuid);
             Gate::forUser($utilisateur)->authorize('modifierDemande', $credit);
+            $anciennesValeurs = [
+                'montant_demande' => $credit->montant_demande,
+                'taux_interet_annuel' => $credit->taux_interet_annuel,
+                'duree_mois' => $credit->duree_mois,
+            ];
 
             foreach (['montant_demande', 'taux_interet_annuel', 'duree_mois', 'observations'] as $champ) {
                 if (array_key_exists($champ, $donnees)) {
@@ -283,6 +305,20 @@ class GestionCreditsService
             }
 
             $credit->save();
+            $this->journalAudit->enregistrer(
+                $utilisateur,
+                'credit.demande_modifiee',
+                'credits',
+                'credit',
+                $credit->id,
+                $anciennesValeurs,
+                [
+                    'montant_demande' => $credit->montant_demande,
+                    'taux_interet_annuel' => $credit->taux_interet_annuel,
+                    'duree_mois' => $credit->duree_mois,
+                ],
+                agenceId: $credit->compte?->agence_id
+            );
 
             return $this->chargerCredit($credit, $utilisateur);
         }, 3);
@@ -293,7 +329,18 @@ class GestionCreditsService
         return DB::transaction(function () use ($utilisateur, $uuid): Credit {
             $credit = $this->verrouillerCredit($utilisateur, $uuid);
             Gate::forUser($utilisateur)->authorize('soumettreDemande', $credit);
+            $agenceId = $credit->compte?->agence_id;
             $credit->forceFill(['statut' => 'en_attente'])->save();
+            $this->journalAudit->enregistrer(
+                $utilisateur,
+                'credit.demande_soumise',
+                'credits',
+                'credit',
+                $credit->id,
+                ['statut' => 'en_etude'],
+                ['statut' => 'en_attente'],
+                agenceId: $agenceId
+            );
 
             return $this->chargerCredit($credit, $utilisateur);
         }, 3);
@@ -432,6 +479,20 @@ class GestionCreditsService
                     'montant_accorde' => $credit->montant_accorde,
                     'transaction_uuid' => $transaction->uuid,
                 ]
+            );
+            $this->journalAudit->enregistrer(
+                $validateur,
+                'credit.deboursement',
+                'credits',
+                'transaction',
+                $transaction->id,
+                [],
+                [
+                    'reference_transaction' => $transaction->reference_transaction,
+                    'credit_uuid' => $credit->uuid,
+                    'montant' => $transaction->montant,
+                ],
+                agenceId: $compte->agence_id
             );
 
             return $this->chargerCredit($credit, $validateur);
@@ -686,6 +747,21 @@ class GestionCreditsService
                         ? 'solde'
                         : ($creditEnRetard ? 'en_retard' : 'en_remboursement'),
                 ])->save();
+                $this->journalAudit->enregistrer(
+                    $caissier,
+                    'credit.remboursement',
+                    'credits',
+                    'transaction',
+                    $transaction->id,
+                    [],
+                    [
+                        'reference_transaction' => $transaction->reference_transaction,
+                        'credit_uuid' => $credit->uuid,
+                        'montant' => $transaction->montant,
+                        'statut_credit' => $credit->statut,
+                    ],
+                    agenceId: $compte->agence_id
+                );
 
                 $transaction->load('remboursementsEcheances.echeance');
 
@@ -961,17 +1037,19 @@ class GestionCreditsService
         array $anciennesValeurs,
         array $nouvellesValeurs
     ): void {
-        AuditLog::query()->create([
-            'user_id' => $validateur->id,
-            'action' => $action,
-            'table_concernee' => 'credits',
-            'enregistrement_id' => $credit->id,
-            'anciennes_valeurs' => $anciennesValeurs,
-            'nouvelles_valeurs' => $nouvellesValeurs,
-            'description' => $action === 'credit.approuve'
+        $this->journalAudit->enregistrer(
+            $validateur,
+            $action,
+            'credits',
+            'credit',
+            $credit->id,
+            $anciennesValeurs,
+            $nouvellesValeurs,
+            agenceId: $credit->compte?->agence_id,
+            description: $action === 'credit.approuve'
                 ? 'Approbation et déboursement atomique du crédit '.$credit->uuid
-                : 'Rejet de la demande de crédit '.$credit->uuid,
-        ]);
+                : 'Rejet de la demande de crédit '.$credit->uuid
+        );
     }
 
     /**

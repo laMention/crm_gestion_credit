@@ -50,7 +50,10 @@ class UtilisateurController extends Controller
     public function creer(
         CreerUtilisateurRequest $request
     ): JsonResponse {
-        $utilisateur = $this->gestionUtilisateurs->creer($request->validated());
+        $utilisateur = $this->gestionUtilisateurs->creer(
+            $request->user(),
+            $request->validated()
+        );
 
         return (new UtilisateurResource($utilisateur))
             ->additional(['message' => 'Utilisateur créé.'])
@@ -68,7 +71,11 @@ class UtilisateurController extends Controller
         );
         $this->authorize('modifier', $utilisateur);
 
-        $utilisateur = $this->gestionUtilisateurs->modifier($utilisateur, $request->validated());
+        $utilisateur = $this->gestionUtilisateurs->modifier(
+            $request->user(),
+            $utilisateur,
+            $request->validated()
+        );
 
         return (new UtilisateurResource($utilisateur))
             ->additional(['message' => 'Utilisateur modifié.']);
@@ -84,7 +91,7 @@ class UtilisateurController extends Controller
         );
         $this->authorize('activer', $utilisateur);
 
-        $utilisateur = $this->gestionUtilisateurs->activer($utilisateur);
+        $utilisateur = $this->gestionUtilisateurs->activer($request->user(), $utilisateur);
 
         return (new UtilisateurResource($utilisateur))
             ->additional(['message' => 'Utilisateur activé.']);
@@ -100,7 +107,7 @@ class UtilisateurController extends Controller
         );
         $this->authorize('desactiver', $utilisateur);
 
-        $utilisateur = $this->gestionUtilisateurs->desactiver($utilisateur);
+        $utilisateur = $this->gestionUtilisateurs->desactiver($request->user(), $utilisateur);
 
         return (new UtilisateurResource($utilisateur))
             ->additional(['message' => 'Utilisateur désactivé.']);
@@ -109,7 +116,7 @@ class UtilisateurController extends Controller
     public function permissionsUtilisateur(
         Request $request,
         string $uuid,
-        CatalogueRolesPermissionsService $catalogue        
+        CatalogueRolesPermissionsService $catalogue
     ): JsonResponse {
         $utilisateur = $this->gestionUtilisateurs->trouverAccessibleParUuid(
             $request->user(),

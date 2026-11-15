@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\LoginRequest;
-use App\Models\User;
+use App\Services\AuditLogService;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,12 +14,15 @@ class AuthController extends Controller
 {
     protected AuthService $authService;
 
-    public function __construct(AuthService $authService)
-    {
+    public function __construct(
+        AuthService $authService,
+        private readonly AuditLogService $journalAudit
+    ) {
         $this->authService = $authService;
     }
 
-    public function login(LoginRequest $request): JsonResponse {
+    public function login(LoginRequest $request): JsonResponse
+    {
         $credentials = $request->validated();
 
         return response()->json([
@@ -35,6 +38,15 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
+        $this->journalAudit->enregistrer(
+            $request->user(),
+            'authentification.deconnexion',
+            'authentification',
+            'utilisateur',
+            $request->user()->id,
+            [],
+            ['resultat' => 'reussie']
+        );
         $accessToken = $request->user()->currentAccessToken();
 
         if ($accessToken instanceof PersonalAccessToken) {
@@ -46,7 +58,8 @@ class AuthController extends Controller
         ]);
     }
 
-    public function profile(Request $request): JsonResponse {        
+    public function profile(Request $request): JsonResponse
+    {
         $user = $request->user();
 
         return response()->json([

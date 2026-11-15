@@ -10,11 +10,16 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use OverflowException;
 
 class GestionClientsComptesService
 {
+    public function __construct(
+        private readonly AuditLogService $journalAudit
+    ) {}
+
     /**
      * @param array{
      *     recherche?: string,
@@ -105,27 +110,59 @@ class GestionClientsComptesService
      */
     public function creerClient(User $utilisateur, array $donnees): Client
     {
-        $utilisateur->loadMissing('agence:id,code_agence');
+        return DB::transaction(function () use ($utilisateur, $donnees): Client {
+            $utilisateur->loadMissing('agence:id,code_agence');
 
-        $client = Client::query()->create([
-            ...$donnees,
-            'agence_id' => $utilisateur->agence_id,
-            'code_client' => $this->genererCodeClient($utilisateur),
-            'statut' => 'actif',
-            'cree_par_user_id' => $utilisateur->id,
-        ]);
+            $client = Client::query()->create([
+                ...$donnees,
+                'agence_id' => $utilisateur->agence_id,
+                'code_client' => $this->genererCodeClient($utilisateur),
+                'statut' => 'actif',
+                'cree_par_user_id' => $utilisateur->id,
+            ]);
+            $this->journalAudit->enregistrer(
+                $utilisateur,
+                'client.cree',
+                'clients',
+                'client',
+                $client->id,
+                [],
+                ['statut' => 'actif'],
+                agenceId: $client->agence_id
+            );
 
-        return $this->chargerRelationsClient($client);
+            return $this->chargerRelationsClient($client);
+        });
     }
 
     /**
      * @param  array<string, mixed>  $donnees
      */
-    public function modifierClient(Client $client, array $donnees): Client
-    {
-        $client->fill($donnees)->save();
+    public function modifierClient(
+        User $utilisateur,
+        Client $client,
+        array $donnees
+    ): Client {
+        return DB::transaction(function () use (
+            $utilisateur,
+            $client,
+            $donnees
+        ): Client {
+            $champsModifies = array_keys($donnees);
+            $client->fill($donnees)->save();
+            $this->journalAudit->enregistrer(
+                $utilisateur,
+                'client.modifie',
+                'clients',
+                'client',
+                $client->id,
+                [],
+                ['champs_modifies' => $champsModifies],
+                agenceId: $client->agence_id
+            );
 
-        return $this->chargerRelationsClient($client);
+            return $this->chargerRelationsClient($client);
+        });
     }
 
     /**
@@ -224,26 +261,45 @@ class GestionClientsComptesService
         Client $client,
         array $donnees
     ): Compte {
-        $client->loadMissing('agence:id,code_agence');
-        $numeroCompte = $this->genererNumeroCompte($client->agence->code_agence);
+        return DB::transaction(function () use (
+            $utilisateur,
+            $client,
+            $donnees
+        ): Compte {
+            $client->loadMissing('agence:id,code_agence');
+            $numeroCompte = $this->genererNumeroCompte($client->agence->code_agence);
 
-        $compte = Compte::query()->create([
-            'agence_id' => $client->agence_id,
-            'client_id' => $client->id,
-            'numero_compte' => $numeroCompte,
-            'type_compte' => $donnees['type_compte'],
-            'solde' => '0.00',
-            'solde_initial' => '0.00',
-            'devise' => 'XOF',
-            'date_ouverture' => today(),
-            'statut_compte' => 'actif',
-            'cree_par_user_id' => $utilisateur->id,
-        ]);
+            $compte = Compte::query()->create([
+                'agence_id' => $client->agence_id,
+                'client_id' => $client->id,
+                'numero_compte' => $numeroCompte,
+                'type_compte' => $donnees['type_compte'],
+                'solde' => '0.00',
+                'solde_initial' => '0.00',
+                'devise' => 'XOF',
+                'date_ouverture' => today(),
+                'statut_compte' => 'actif',
+                'cree_par_user_id' => $utilisateur->id,
+            ]);
+            $this->journalAudit->enregistrer(
+                $utilisateur,
+                'compte.ouvert',
+                'comptes',
+                'compte',
+                $compte->id,
+                [],
+                [
+                    'numero_compte' => $compte->numero_compte,
+                    'statut_compte' => $compte->statut_compte,
+                ],
+                agenceId: $compte->agence_id
+            );
 
-        return $compte->load([
-            'client:id,uuid,code_client,nom_client,prenom_client',
-            'agence:id,uuid,code_agence,nom_agence',
-        ]);
+            return $compte->load([
+                'client:id,uuid,code_client,nom_client,prenom_client',
+                'agence:id,uuid,code_agence,nom_agence',
+            ]);
+        });
     }
 
     /**

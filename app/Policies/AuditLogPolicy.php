@@ -23,7 +23,7 @@ class AuditLogPolicy extends PolitiqueAgence
 
     public function consulter(User $user, AuditLog $journal): bool|Response
     {
-        $agenceId = $journal->user?->agence_id;
+        $agenceId = $journal->agence_id ?? $journal->user?->agence_id;
         $acces = $this->verifierAccesAgence($user, $agenceId);
 
         return $acces === true

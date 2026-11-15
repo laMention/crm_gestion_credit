@@ -5,9 +5,14 @@ namespace App\Services;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class GestionUtilisateursService
 {
+    public function __construct(
+        private readonly AuditLogService $journalAudit
+    ) {}
+
     /**
      * @param array{
      *     recherche?: string,
@@ -56,7 +61,6 @@ class GestionUtilisateursService
             ->paginate($filtres['per_page'] ?? 15);
     }
 
-    // Trouve un utilisateur accessible par son UUID
     public function trouverAccessibleParUuid(User $demandeur, string $uuid): User
     {
         return User::query()
@@ -69,42 +73,105 @@ class GestionUtilisateursService
     /**
      * @param  array<string, mixed>  $donnees
      */
-    public function creer(array $donnees): User
+    public function creer(User $acteur, array $donnees): User
     {
-        $utilisateur = User::query()->create($donnees);
+        return DB::transaction(function () use ($acteur, $donnees): User {
+            $utilisateur = User::query()->create($donnees);
+            $this->journalAudit->enregistrer(
+                $acteur,
+                'utilisateur.cree',
+                'utilisateurs',
+                'utilisateur',
+                $utilisateur->id,
+                [],
+                [
+                    'role' => $utilisateur->role->value,
+                    'agence_id' => $utilisateur->agence_id,
+                    'actif' => $utilisateur->actif,
+                ],
+                agenceId: $acteur->agence_id
+            );
 
-        return $this->chargerAgence($utilisateur);
+            return $this->chargerAgence($utilisateur);
+        });
     }
 
     /**
      * @param  array<string, mixed>  $donnees
-     * modifier un utilisateur
+     *                                         modifier un utilisateur
      */
-    public function modifier(User $utilisateur, array $donnees): User
-    {
-        $utilisateur->fill($donnees)->save();
+    public function modifier(
+        User $acteur,
+        User $utilisateur,
+        array $donnees
+    ): User {
+        return DB::transaction(function () use ($acteur, $utilisateur, $donnees): User {
+            $anciennesValeurs = [
+                'role' => $utilisateur->role->value,
+                'agence_id' => $utilisateur->agence_id,
+                'actif' => $utilisateur->actif,
+            ];
+            $utilisateur->fill($donnees)->save();
+            $this->journalAudit->enregistrer(
+                $acteur,
+                'utilisateur.modifie',
+                'utilisateurs',
+                'utilisateur',
+                $utilisateur->id,
+                $anciennesValeurs,
+                [
+                    'role' => $utilisateur->role->value,
+                    'agence_id' => $utilisateur->agence_id,
+                    'actif' => $utilisateur->actif,
+                ],
+                agenceId: $acteur->agence_id
+            );
 
-        return $this->chargerAgence($utilisateur);
+            return $this->chargerAgence($utilisateur);
+        });
     }
 
-    // Activer un utilisateur
-    public function activer(User $utilisateur): User
+    public function activer(User $acteur, User $utilisateur): User
     {
-        $utilisateur->forceFill(['actif' => true])->save();
+        return DB::transaction(function () use ($acteur, $utilisateur): User {
+            $ancienEtat = $utilisateur->actif;
+            $utilisateur->forceFill(['actif' => true])->save();
+            $this->journalAudit->enregistrer(
+                $acteur,
+                'utilisateur.active',
+                'utilisateurs',
+                'utilisateur',
+                $utilisateur->id,
+                ['actif' => $ancienEtat],
+                ['actif' => true],
+                agenceId: $acteur->agence_id
+            );
 
-        return $this->chargerAgence($utilisateur);
+            return $this->chargerAgence($utilisateur);
+        });
     }
 
-    // Désactiver un utilisateur
-    public function desactiver(User $utilisateur): User
+    public function desactiver(User $acteur, User $utilisateur): User
     {
-        $utilisateur->forceFill(['actif' => false])->save();
-        $utilisateur->tokens()->delete();
+        return DB::transaction(function () use ($acteur, $utilisateur): User {
+            $ancienEtat = $utilisateur->actif;
+            $utilisateur->forceFill(['actif' => false])->save();
+            $utilisateur->tokens()->delete();
+            $this->journalAudit->enregistrer(
+                $acteur,
+                'utilisateur.desactive',
+                'utilisateurs',
+                'utilisateur',
+                $utilisateur->id,
+                ['actif' => $ancienEtat],
+                ['actif' => false],
+                agenceId: $acteur->agence_id
+            );
 
-        return $this->chargerAgence($utilisateur);
+            return $this->chargerAgence($utilisateur);
+        });
     }
 
-    // Charger l'agence associée à un utilisateur
     private function chargerAgence(User $utilisateur): User
     {
         return $utilisateur->load('agence:id,uuid,code_agence,nom_agence,ville_agence');
