@@ -76,7 +76,7 @@ class AuthService
                 'utilisateur',
                 $user?->id,
                 resultat: 'echec',
-                description: 'Échec de connexion. Aucun secret de connexion n’est conservé.'
+                description: 'Échec de connexion.'
             );
 
             throw new AuthenticationException('Informations de connexion invalides.');

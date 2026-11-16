@@ -1,4 +1,3 @@
-use App\Models\User;
 <?php
 
 use App\Http\Controllers\Api\v1\AuditLogController;
