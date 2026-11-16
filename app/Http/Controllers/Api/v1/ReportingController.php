@@ -98,6 +98,7 @@ class ReportingController extends Controller
                     'type_transaction' => $transaction->type_transaction,
                     'montant' => $transaction->montant,
                     'devise' => $transaction->devise,
+                    'code_agence' => $transaction->code_agence,
                     'agence_id' => $transaction->agence_id,
                 ]),
             'meta' => [

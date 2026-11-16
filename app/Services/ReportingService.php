@@ -18,10 +18,6 @@ use Illuminate\Support\Facades\Gate;
 use Throwable;
 
 // use Carbon\Carbon;
-use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 class ReportingService
 {
     private const array TYPES_TRANSACTION = [
@@ -224,17 +220,19 @@ class ReportingService
 
         return $requete
             ->select([
-                'id',
-                'uuid',
-                'reference_transaction',
-                'agence_id',
-                'type_transaction',
-                'montant',
-                'devise',
-                'date_transaction',
+                'transactions.id',
+                'transactions.uuid',
+                'transactions.reference_transaction',
+                'agences.code_agence',
+                'transactions.agence_id',
+                'transactions.type_transaction',
+                'transactions.montant',
+                'transactions.devise',
+                'transactions.date_transaction',
             ])
-            ->orderByDesc('date_transaction')
-            ->orderByDesc('id')
+            ->join('agences', 'transactions.agence_id', '=', 'agences.id')
+            ->orderByDesc('transactions.date_transaction')
+            ->orderByDesc('transactions.id')
             ->paginate($filtres['per_page'] ?? 25);
     }
 
