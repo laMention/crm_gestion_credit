@@ -27,6 +27,7 @@ class ClientResource extends JsonResource
             'lieu_naissance' => $this->lieu_naissance,
             'sexe' => $this->sexe,
             'profession' => $this->profession,
+            'revenu_mensuel' => $this->revenu_mensuel,
             'statut' => $this->statut,
             'agence' => $this->whenLoaded('agence', fn (): array => [
                 'uuid' => $this->agence->uuid,

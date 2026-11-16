@@ -13,13 +13,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-use App\Models\Agence;
-use App\Models\Client;
-use App\Models\User;
-use App\Models\Credit;
-use App\Models\Transaction;
 #[Fillable([
-    ' ',
+    'agence_id',
     'client_id',
     'numero_compte',
     'type_compte',
