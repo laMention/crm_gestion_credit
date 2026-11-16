@@ -47,9 +47,19 @@ class CreditSeeder extends Seeder
                 $capitalRestant -= $capitalMensuel;
             }
 
-            $dateDebutRemboursement = today()
-                ->startOfMonth()
-                ->subMonths(2);
+            $dateDebutRemboursement = match ($index % 6) {
+                // Un crÃ©dit dÃ©boursÃ© dont la premiÃ¨re Ã©chÃ©ance est encore future.
+                0 => today()->startOfMonth()->addMonth(),
+                // Un crÃ©dit de dÃ©monstration entiÃ¨rement amorti sur sa durÃ©e.
+                1 => today()->startOfMonth()->subMonths($dureeMois - 1),
+                // Plusieurs paiements consÃ©cutifs dÃ©jÃ  enregistrÃ©s.
+                4 => today()->startOfMonth()->subMonths(5),
+                default => today()->startOfMonth()->subMonths(2),
+            };
+            $dateDeboursement = $dateDebutRemboursement
+                ->copy()
+                ->subMonth()
+                ->startOfMonth();
             $compte->update(['solde' => $montant]);
 
             Credit::updateOrCreate(
@@ -67,9 +77,9 @@ class CreditSeeder extends Seeder
                     ),
                     'capital_restant_du' => $montant,
                     'montant_total_interets' => $totalInterets,
-                    'date_demande' => today()->subMonths(4),
-                    'date_approbation' => today()->subMonths(3),
-                    'date_deboursement' => today()->subMonths(3),
+                    'date_demande' => $dateDeboursement->copy()->subMonths(2),
+                    'date_approbation' => $dateDeboursement->copy()->subMonth(),
+                    'date_deboursement' => $dateDeboursement,
                     'date_debut_remboursement' => $dateDebutRemboursement,
                     'date_fin_prevue' => $dateDebutRemboursement
                         ->copy()

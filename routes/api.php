@@ -64,6 +64,7 @@ Route::prefix('v1')->group(function () {
         Route::get('credits', [CreditController::class, 'lister']);
         Route::get('credits/suivi', [CreditController::class, 'suivi']);
         Route::post('comptes/{uuid}/credits', [CreditController::class, 'creer']);
+        Route::get('credits/{uuid}/remboursements', [CreditController::class, 'remboursements']);
         Route::get('credits/{uuid}', [CreditController::class, 'consulter']);
         Route::patch('credits/{uuid}', [CreditController::class, 'modifier']);
         Route::post('credits/{uuid}/soumettre', [CreditController::class, 'soumettre']);

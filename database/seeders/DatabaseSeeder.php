@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             CreditSeeder::class,
             EcheanceCreditSeeder::class,
             TransactionSeeder::class,
+            RemboursementEcheanceSeeder::class,
             ReportingSeeder::class,
             AuditLogSeeder::class,
         ]);

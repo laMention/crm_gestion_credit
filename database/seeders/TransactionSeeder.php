@@ -107,24 +107,71 @@ class TransactionSeeder extends Seeder
 
             $credit = $compteCredit->credit()->firstOrFail();
 
+            $referencesRemboursementsAttendues = [];
             foreach (
                 $credit->echeances()
-                    ->whereIn('statut_echeance_credit', ['paye', 'partiellement_paye'])
+                    ->where('montant_paye', '>', 0)
                     ->orderBy('numero_echeance')
                     ->get() as $echeance
             ) {
                 $datePaiement = $echeance->date_paiement
                     ->copy()
                     ->setTime(14, 0);
-
-                $creerTransaction(
-                    sprintf('RMB%02d', $echeance->numero_echeance),
-                    'remboursement',
-                    (float) $echeance->montant_paye,
-                    $compteCourant->id,
-                    $compteCredit->id,
-                    $datePaiement
+                $montantCentimes = (int) round((float) $echeance->montant_paye * 100);
+                $estPartiel = $montantCentimes < (int) round(
+                    (float) $echeance->montant_echeance * 100
                 );
+
+                if ($estPartiel) {
+                    $premierPaiement = intdiv($montantCentimes, 2);
+                    $paiements = [
+                        [sprintf('RMB%02dA', $echeance->numero_echeance), $premierPaiement, $datePaiement->copy()->subDays(3)],
+                        [sprintf('RMB%02dB', $echeance->numero_echeance), $montantCentimes - $premierPaiement, $datePaiement],
+                    ];
+                } else {
+                    $paiements = [[
+                        sprintf('RMB%02d', $echeance->numero_echeance),
+                        $montantCentimes,
+                        $datePaiement,
+                    ]];
+                }
+
+                foreach ($paiements as [$suffixe, $montant, $date]) {
+                    $reference = sprintf('TRX-%s-%s', $client->code_client, $suffixe);
+                    $referencesRemboursementsAttendues[] = $reference;
+                    $creerTransaction(
+                        $suffixe,
+                        'remboursement',
+                        $montant / 100,
+                        $compteCourant->id,
+                        null,
+                        $date->copy()->setTime(14, 0)
+                    );
+                }
+            }
+
+            $prefixeRemboursement = sprintf('TRX-%s-RMB', $client->code_client);
+            $transactionsObsoletes = Transaction::query()
+                ->where('client_id', $client->id)
+                ->where('compte_source_id', $compteCourant->id)
+                ->where('type_transaction', 'remboursement')
+                ->where('cle_idempotence', 'like', 'DEMO-'.$prefixeRemboursement.'%')
+                ->when(
+                    $referencesRemboursementsAttendues !== [],
+                    fn ($requete) => $requete->whereNotIn(
+                        'reference_transaction',
+                        $referencesRemboursementsAttendues
+                    )
+                )
+                ->when(
+                    $referencesRemboursementsAttendues === [],
+                    fn ($requete) => $requete->whereNotNull('id')
+                )
+                ->get();
+
+            foreach ($transactionsObsoletes as $transactionObsolete) {
+                $transactionObsolete->remboursementsEcheances()->delete();
+                $transactionObsolete->forceDelete();
             }
         }
     }

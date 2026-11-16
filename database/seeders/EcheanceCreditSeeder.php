@@ -14,10 +14,13 @@ class EcheanceCreditSeeder extends Seeder
     public function run(): void
     {
         foreach (Credit::query()->orderBy('id')->get() as $creditIndex => $credit) {
+            $profil = $creditIndex % 6;
             $montantCapital = (float) $credit->montant_accorde;
             $capitalMensuel = round($montantCapital / $credit->duree_mois, 2);
             $capitalRestant = $montantCapital;
             $capitalPaye = 0;
+            $echeanceEnRetard = false;
+            $echeancesSoldees = 0;
             $dateDebut = $credit->date_debut_remboursement->copy();
 
             for ($numero = 1; $numero <= $credit->duree_mois; $numero++) {
@@ -31,22 +34,29 @@ class EcheanceCreditSeeder extends Seeder
                 );
                 $montantEcheance = round($capital + $interet, 2);
                 $dateEcheance = $dateDebut->copy()->addMonths($numero - 1);
+                $montantPaye = match (true) {
+                    $profil === 0 => 0,
+                    $profil === 1 => $montantEcheance,
+                    $profil === 2 && $numero <= 2 => $montantEcheance,
+                    $profil === 2 && $numero === 3 => round($montantEcheance / 2, 2),
+                    $profil === 3 && $numero <= 2 => $montantEcheance,
+                    $profil === 4 && $numero <= 4 => $montantEcheance,
+                    $profil === 5 && $numero <= 2 => $montantEcheance,
+                    $profil === 5 && $numero === 3 => round($montantEcheance / 2, 2),
+                    default => 0,
+                };
+                $interetPaye = min($montantPaye, $interet);
+                $capitalDeCetteEcheancePaye = max(0, $montantPaye - $interetPaye);
                 $statut = match (true) {
-                    $numero <= 2 => 'paye',
-                    $numero === 3 && $creditIndex % 2 === 0 => 'en_retard',
-                    $numero === 3 => 'partiellement_paye',
+                    $montantPaye >= $montantEcheance => 'paye',
+                    $montantPaye > 0 && $dateEcheance->isBefore(today()) => 'en_retard',
+                    $montantPaye > 0 => 'partiellement_paye',
+                    $dateEcheance->isBefore(today()) => 'en_retard',
                     default => 'a_payer',
                 };
-                $montantPaye = match ($statut) {
-                    'paye' => $montantEcheance,
-                    'partiellement_paye' => round($montantEcheance / 2, 2),
-                    default => 0,
-                };
-                $capitalDeCetteEcheancePaye = match ($statut) {
-                    'paye' => $capital,
-                    'partiellement_paye' => round($capital / 2, 2),
-                    default => 0,
-                };
+                $echeanceEnRetard = $echeanceEnRetard
+                    || ($statut === 'en_retard' && $montantPaye < $montantEcheance);
+                $echeancesSoldees += $statut === 'paye' ? 1 : 0;
 
                 EcheanceCredit::updateOrCreate(
                     [
@@ -60,7 +70,7 @@ class EcheanceCreditSeeder extends Seeder
                         'montant_echeance' => $montantEcheance,
                         'montant_paye' => $montantPaye,
                         'date_paiement' => $montantPaye > 0
-                            ? ($statut === 'partiellement_paye' ? today() : $dateEcheance)
+                            ? ($statut === 'paye' ? $dateEcheance : today())
                             : null,
                         'statut_echeance_credit' => $statut,
                     ]
@@ -75,6 +85,9 @@ class EcheanceCreditSeeder extends Seeder
                     $montantCapital - $capitalPaye,
                     2
                 ),
+                'statut' => $echeancesSoldees === $credit->duree_mois
+                    ? 'solde'
+                    : ($echeanceEnRetard ? 'en_retard' : 'en_remboursement'),
             ]);
         }
     }

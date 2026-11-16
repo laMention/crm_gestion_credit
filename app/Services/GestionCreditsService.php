@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -108,6 +109,39 @@ class GestionCreditsService
         return $this->requeteCredits($utilisateur)
             ->where('uuid', $uuid)
             ->firstOrFail();
+    }
+
+    /** @return Collection<int, Transaction> */
+    public function listerRemboursements(User $utilisateur, Credit $credit): Collection
+    {
+        return Transaction::query()
+            ->accessiblePar($utilisateur)
+            ->where('type_transaction', 'remboursement')
+            ->where('statut_transaction', 'terminee')
+            ->whereHas(
+                'remboursementsEcheances',
+                fn (Builder $allocations): Builder => $allocations->whereHas(
+                    'echeance',
+                    fn (Builder $echeances): Builder => $echeances->where(
+                        'credit_id',
+                        $credit->id
+                    )
+                )
+            )
+            ->with([
+                'remboursementsEcheances' => fn ($allocations) => $allocations
+                    ->whereHas(
+                        'echeance',
+                        fn (Builder $echeances): Builder => $echeances->where(
+                            'credit_id',
+                            $credit->id
+                        )
+                    )
+                    ->with('echeance:id,uuid,credit_id,numero_echeance'),
+            ])
+            ->orderByDesc('date_transaction')
+            ->orderByDesc('id')
+            ->get();
     }
 
     public function trouverEcheanceAccessibleParUuid(

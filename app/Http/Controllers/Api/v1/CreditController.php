@@ -78,6 +78,39 @@ class CreditController extends Controller
         return new CreditResource($credit);
     }
 
+    public function remboursements(Request $request, string $uuid): JsonResponse
+    {
+        $utilisateur = $request->user();
+        $credit = $this->gestionCredits->trouverCreditAccessibleParUuid(
+            $utilisateur,
+            $uuid
+        );
+        $this->authorize('consulter', $credit);
+
+        $remboursements = $this->gestionCredits->listerRemboursements(
+            $utilisateur,
+            $credit
+        );
+
+        return response()->json([
+            'data' => $remboursements->map(fn ($transaction): array => [
+                'uuid' => $transaction->uuid,
+                'reference_transaction' => $transaction->reference_transaction,
+                'date_transaction' => $transaction->date_transaction?->toIso8601String(),
+                'montant' => $transaction->montant,
+                'devise' => $transaction->devise,
+                'echeances' => $transaction->remboursementsEcheances
+                    ->map(fn ($allocation): array => [
+                        'echeance_uuid' => $allocation->echeance->uuid,
+                        'numero_echeance' => $allocation->echeance->numero_echeance,
+                        'montant' => $allocation->montant,
+                        'capital' => $allocation->capital,
+                        'interet' => $allocation->interet,
+                    ])->values(),
+            ])->values(),
+        ]);
+    }
+
     public function modifier(
         ModifierCreditRequest $request,
         string $uuid
