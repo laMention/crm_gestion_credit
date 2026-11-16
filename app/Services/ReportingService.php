@@ -28,7 +28,7 @@ class ReportingService
         'depot',
         'retrait',
         'virement',
-        'paiement_facture',
+        // 'paiement_facture',
         'deboursement',
         'remboursement',
     ];
@@ -416,7 +416,8 @@ class ReportingService
                 $fluxNet += $centimes;
             } elseif (in_array(
                 $type,
-                ['retrait', 'remboursement', 'paiement_facture'],
+                // ['retrait', 'remboursement', 'paiement_facture'],
+                ['retrait', 'remboursement'],
                 true
             )) {
                 $fluxNet -= $centimes;
