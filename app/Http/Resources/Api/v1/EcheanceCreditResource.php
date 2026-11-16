@@ -42,6 +42,12 @@ class EcheanceCreditResource extends JsonResource
                 'compte' => $this->credit->compte ? [
                     'uuid' => $this->credit->compte->uuid,
                     'numero_compte' => $this->credit->compte->numero_compte,
+                    'client' => $this->credit->compte->client ? [
+                        'uuid' => $this->credit->compte->client->uuid,
+                        'code_client' => $this->credit->compte->client->code_client,
+                        'nom_client' => $this->credit->compte->client->nom_client,
+                        'prenom_client' => $this->credit->compte->client->prenom_client,
+                    ] : null,
                 ] : null,
             ]),
         ];
