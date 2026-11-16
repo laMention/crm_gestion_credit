@@ -89,7 +89,7 @@ class GestionUtilisateursService
                     'agence_id' => $utilisateur->agence_id,
                     'actif' => $utilisateur->actif,
                 ],
-                agenceId: $acteur->agence_id
+                agenceId: $utilisateur->agence_id ?? $acteur->agence_id
             );
 
             return $this->chargerAgence($utilisateur);
@@ -112,9 +112,10 @@ class GestionUtilisateursService
                 'actif' => $utilisateur->actif,
             ];
             $utilisateur->fill($donnees)->save();
+            $agenceModifiee = $anciennesValeurs['agence_id'] !== $utilisateur->agence_id;
             $this->journalAudit->enregistrer(
                 $acteur,
-                'utilisateur.modifie',
+                $agenceModifiee ? 'utilisateur.agence_reaffectee' : 'utilisateur.modifie',
                 'utilisateurs',
                 'utilisateur',
                 $utilisateur->id,
@@ -124,7 +125,9 @@ class GestionUtilisateursService
                     'agence_id' => $utilisateur->agence_id,
                     'actif' => $utilisateur->actif,
                 ],
-                agenceId: $acteur->agence_id
+                agenceId: $anciennesValeurs['agence_id']
+                    ?? $utilisateur->agence_id
+                    ?? $acteur->agence_id
             );
 
             return $this->chargerAgence($utilisateur);

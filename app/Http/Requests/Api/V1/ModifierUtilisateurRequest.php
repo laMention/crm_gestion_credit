@@ -52,6 +52,7 @@ class ModifierUtilisateurRequest extends FormRequest
 
         if (
             $utilisateur instanceof User
+            && (! $role?->estPersonnelAgence() || ! $this->roleChange($utilisateur))
             && $this->input('agence_id') !== null
             && (string) $this->input('agence_id') === (string) $utilisateur->agence_id
         ) {
@@ -64,11 +65,11 @@ class ModifierUtilisateurRequest extends FormRequest
                 'integer',
                 $regleAgence,
                 Rule::requiredIf(fn (): bool => $role?->estPersonnelAgence()
-                    && ($this->exists('role') || $this->exists('agence_id'))
-                    && $this->input(
-                        'agence_id',
-                        $utilisateur instanceof User ? $utilisateur->agence_id : null
-                    ) === null),
+                    && (
+                        $this->roleChange($utilisateur)
+                        || ($this->exists('agence_id') && $this->input('agence_id') === null)
+                        || ($utilisateur instanceof User && $utilisateur->agence_id === null)
+                    )),
             ],
             'nom' => ['sometimes', 'required', 'string', 'max:255'],
             'prenom' => ['sometimes', 'required', 'string', 'max:255'],
@@ -119,6 +120,13 @@ class ModifierUtilisateurRequest extends FormRequest
         );
 
         return UserRole::tryFrom((string) $valeurRole);
+    }
+
+    private function roleChange(?User $utilisateur): bool
+    {
+        return $utilisateur instanceof User
+            && $this->exists('role')
+            && $this->input('role') !== $utilisateur->role->value;
     }
 
     private function recupererUtilisateurCible(): ?User
