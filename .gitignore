@@ -1,15 +1,3 @@
-use App\Models\Agence;
-use App\Models\User;
-use App\Models\Compte;
-use App\Models\Transaction;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Client;
-use App\Models\Credit;
-use App\Models\AuditLog;
-use App\Models\EcheanceCredit;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 *.log
 .DS_Store
 .env
@@ -39,3 +27,4 @@ Homestead.yaml
 Thumbs.db
 /.claude
 /requete.md
+/CLAUDE.md

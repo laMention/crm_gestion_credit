@@ -236,6 +236,40 @@ class UtilisateurControllerTest extends TestCase
         ]);
     }
 
+    public function test_inactive_agencies_cannot_be_assigned_to_new_users_but_keep_existing_assignments(): void
+    {
+        $administrateur = $this->creerUtilisateur(UserRole::ADMINISTRATEUR);
+        $agence = $this->creerAgence('AG-API-INACTIVE');
+        $utilisateurExistant = $this->creerUtilisateur(UserRole::CONSEILLER, $agence, [
+            'email' => 'conseiller-inactif-api@example.test',
+        ]);
+        $agence->forceFill(['actif' => false])->save();
+
+        $this->actingAs($administrateur, 'sanctum')
+            ->postJson('/api/v1/users', $this->donneesUtilisateur([
+                'email' => 'nouveau-conseiller-inactif@example.test',
+                'role' => UserRole::CONSEILLER->value,
+                'agence_id' => $agence->id,
+            ]))
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'errors.agence_id.0',
+                'L\'agence sélectionnée n\'existe pas ou est inactive.'
+            );
+
+        $this->patchJson('/api/v1/users/'.$utilisateurExistant->uuid, [
+            'agence_id' => $agence->id,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.agence.uuid', $agence->uuid);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $utilisateurExistant->id,
+            'agence_id' => $agence->id,
+            'actif' => true,
+        ]);
+    }
+
     public function test_administrator_can_activate_and_deactivate_a_user(): void
     {
         $administrateur = $this->creerUtilisateur(UserRole::ADMINISTRATEUR);

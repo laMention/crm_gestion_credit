@@ -29,10 +29,12 @@ class UtilisateurResource extends JsonResource
             'actif' => $this->actif,
             'derniere_connexion_le' => $this->derniere_connexion_le,
             'agence' => $agence instanceof Agence ? [
+                'id' => $agence->id,
                 'uuid' => $agence->uuid,
                 'code' => $agence->code_agence,
                 'nom' => $agence->nom_agence,
                 'ville' => $agence->ville_agence,
+                'actif' => $agence->actif,
             ] : null,
             'cree_le' => $this->created_at,
             'modifie_le' => $this->updated_at,

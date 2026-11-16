@@ -48,12 +48,21 @@ class ModifierUtilisateurRequest extends FormRequest
     {
         $utilisateur = $this->recupererUtilisateurCible();
         $role = $this->roleUtilisateurCible();
+        $regleAgence = Rule::exists('agences', 'id')->where('actif', true);
+
+        if (
+            $utilisateur instanceof User
+            && $this->input('agence_id') !== null
+            && (string) $this->input('agence_id') === (string) $utilisateur->agence_id
+        ) {
+            $regleAgence = Rule::exists('agences', 'id');
+        }
 
         return [
             'agence_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('agences', 'id'),
+                $regleAgence,
                 Rule::requiredIf(fn (): bool => $role?->estPersonnelAgence()
                     && ($this->exists('role') || $this->exists('agence_id'))
                     && $this->input(
@@ -96,7 +105,7 @@ class ModifierUtilisateurRequest extends FormRequest
     {
         return [
             'agence_id.required' => 'Une agence est obligatoire pour ce rôle.',
-            'agence_id.exists' => 'L\'agence sélectionnée n\'existe pas.',
+            'agence_id.exists' => 'L\'agence sélectionnée n\'existe pas ou est inactive.',
             'role.in' => 'Le rôle sélectionné est invalide.',
         ];
     }

@@ -26,7 +26,7 @@ class GestionUtilisateursService
     {
         return User::query()
             ->accessiblePar($demandeur)
-            ->with('agence:id,uuid,code_agence,nom_agence,ville_agence')
+            ->with('agence:id,uuid,code_agence,nom_agence,ville_agence,actif')
             ->when(
                 isset($filtres['recherche']) && $filtres['recherche'] !== '',
                 function (Builder $requete) use ($filtres): void {
@@ -174,6 +174,6 @@ class GestionUtilisateursService
 
     private function chargerAgence(User $utilisateur): User
     {
-        return $utilisateur->load('agence:id,uuid,code_agence,nom_agence,ville_agence');
+        return $utilisateur->load('agence:id,uuid,code_agence,nom_agence,ville_agence,actif');
     }
 }

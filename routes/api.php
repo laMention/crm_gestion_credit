@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\v1\AgenceController;
 use App\Http\Controllers\Api\v1\AuditLogController;
 use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\ClientController;
@@ -25,6 +26,12 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('auth:sanctum')->group(function () {
+        Route::get('agences', [AgenceController::class, 'lister']);
+        Route::post('agences', [AgenceController::class, 'creer']);
+        Route::get('agences/{agence}', [AgenceController::class, 'consulter']);
+        Route::put('agences/{agence}', [AgenceController::class, 'modifier']);
+        Route::patch('agences/{agence}', [AgenceController::class, 'modifier']);
+
         Route::get('clients', [ClientController::class, 'lister']);
         Route::post('clients', [ClientController::class, 'creer']);
         Route::get('clients/{uuid}', [ClientController::class, 'consulter']);

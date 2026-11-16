@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\UserRole;
 use App\Models\Agence;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class AgencePolicy extends PolitiqueAgence
 {
@@ -14,11 +15,11 @@ class AgencePolicy extends PolitiqueAgence
             || $user->agence_id !== null;
     }
 
-    public function consulter(User $user, Agence $agence): bool
+    public function consulter(User $user, Agence $agence): bool|Response
     {
         $acces = $this->verifierAccesAgence($user, $agence->id);
 
-        return $acces === true;
+        return $acces === true ? true : $acces;
     }
 
     public function creer(User $user): bool
@@ -26,11 +27,14 @@ class AgencePolicy extends PolitiqueAgence
         return $user->role === UserRole::ADMINISTRATEUR;
     }
 
-    public function modifier(User $user, Agence $agence): bool
+    public function modifier(User $user, Agence $agence): bool|Response
     {
         $acces = $this->verifierAccesAgence($user, $agence->id);
 
-        return $acces === true
-            && $user->role === UserRole::ADMINISTRATEUR;
+        if ($acces !== true) {
+            return $acces;
+        }
+
+        return $user->role === UserRole::ADMINISTRATEUR;
     }
 }

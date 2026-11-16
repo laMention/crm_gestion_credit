@@ -29,7 +29,7 @@ class CreerUtilisateurRequest extends FormRequest
             'agence_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('agences', 'id'),
+                Rule::exists('agences', 'id')->where('actif', true),
                 Rule::requiredIf(fn (): bool => UserRole::tryFrom(
                     (string) $this->input('role')
                 )?->estPersonnelAgence() ?? false),
@@ -59,7 +59,7 @@ class CreerUtilisateurRequest extends FormRequest
     {
         return [
             'agence_id.required' => 'Une agence est obligatoire pour ce rôle.',
-            'agence_id.exists' => 'L\'agence sélectionnée n\'existe pas.',
+            'agence_id.exists' => 'L\'agence sélectionnée n\'existe pas ou est inactive.',
             'role.in' => 'Le rôle sélectionné est invalide.',
         ];
     }

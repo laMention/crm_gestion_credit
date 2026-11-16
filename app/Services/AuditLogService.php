@@ -184,6 +184,7 @@ class AuditLogService
         return match ($module) {
             'authentification' => 'users',
             'utilisateurs' => 'users',
+            'agences' => 'agences',
             'clients' => 'clients',
             'comptes' => 'comptes',
             'transactions' => 'transactions',
