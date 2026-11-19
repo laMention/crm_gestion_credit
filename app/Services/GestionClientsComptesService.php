@@ -112,6 +112,8 @@ class GestionClientsComptesService
     {
         return DB::transaction(function () use ($utilisateur, $donnees): Client {
             $utilisateur->loadMissing('agence:id,code_agence');
+            $typesComptes = array_values(array_unique($donnees['types_comptes'] ?? []));
+            unset($donnees['types_comptes']);
 
             $client = Client::query()->create([
                 ...$donnees,
@@ -120,6 +122,9 @@ class GestionClientsComptesService
                 'statut' => 'actif',
                 'cree_par_user_id' => $utilisateur->id,
             ]);
+            foreach ($typesComptes as $typeCompte) {
+                $this->ouvrirCompte($utilisateur, $client, ['type_compte' => $typeCompte]);
+            }
             $this->journalAudit->enregistrer(
                 $utilisateur,
                 'client.cree',

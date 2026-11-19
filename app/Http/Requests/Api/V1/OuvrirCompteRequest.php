@@ -28,7 +28,7 @@ class OuvrirCompteRequest extends FormRequest
             'type_compte' => [
                 'required',
                 'string',
-                Rule::in(['courant', 'epargne']),
+                Rule::in(['courant', 'epargne', 'credit']),
             ],
         ];
     }

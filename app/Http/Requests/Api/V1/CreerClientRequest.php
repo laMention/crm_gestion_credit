@@ -57,6 +57,8 @@ class CreerClientRequest extends FormRequest
             'date_expiration_piece' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'profession' => ['sometimes', 'nullable', 'string', 'max:255'],
             'revenu_mensuel' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'types_comptes' => ['sometimes', 'array'],
+            'types_comptes.*' => ['string', Rule::in(['courant', 'epargne', 'credit'])],
         ];
     }
 }

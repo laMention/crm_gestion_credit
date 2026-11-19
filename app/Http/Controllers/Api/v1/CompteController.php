@@ -7,11 +7,11 @@ use App\Http\Requests\Api\V1\ListerComptesRequest;
 use App\Http\Requests\Api\V1\OuvrirCompteRequest;
 use App\Http\Requests\Api\V1\ReleveCompteRequest;
 use App\Http\Resources\Api\v1\CompteResource;
+use App\Models\Compte;
 use App\Services\GestionClientsComptesService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-// use App\Models\Compte;
 
 class CompteController extends Controller
 {
